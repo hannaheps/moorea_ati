@@ -41,7 +41,7 @@ write.csv(erich, "../output/ati-metadata-with-alphadiv.csv" )
 #erich <- readRDS("../output/ati-erich.RDS")
 
 
-###Can we do a quick visual correlation of alpha diversity and nutrients??
+###Can we do a super quick visual correlation of alpha diversity and nutrients??
 p1 <- ggplot(erich, aes(x = Nitrite_plus_Nitrate, y = Observed)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
@@ -63,10 +63,20 @@ p3 <- ggplot(erich, aes(x = Ammonia, y = Observed)) +
   ylab("Observed Microbial Species Richness") +
   theme_bw()
 
-plot_grid(p1, p2, p3) #from library "cowplot"
-ggsave("../output/alpha_vs_nutrients.pdf", plot = last_plot())
+##How about adding an N:P ratio so we can plot this too?
+erich$N.P <- (erich$Ammonia + erich$Nitrite_plus_Nitrate)/erich$Phosphate
+
+p4 <- ggplot(erich, aes(x = N.P, y = Observed)) +
+  geom_point(size=2) +
+  geom_smooth(method=lm) +
+  xlab("N:P Ratio") +
+  ylab("Observed Microbial Species Richness") +
+  theme_bw()
+
+plot_grid(p1, p2, p3, p4) #from library "cowplot"
+ggsave("../output/plots/alpha_vs_nutrients.pdf", plot = last_plot())
 
 
 
-
-
+    
+    
