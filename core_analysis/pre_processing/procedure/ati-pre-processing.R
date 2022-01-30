@@ -52,7 +52,7 @@ physeq.nm <- prune_taxa(all.taxa, physeq)
 #make a sample data frame
 sample.data <- as(sample_data(physeq.nm), "data.frame") #89 observations, 14 variables
 
-#Decontamination cannot be done because control sample had 2 reads only! Clean samples! 
+#Decontamination cannot be done because control sample had 2 reads only! Clean samples?? OR bad barcodes.. 
 
 #Remove singletons
 physeq.nm <- prune_taxa(taxa_sums(physeq.nm) > 1, physeq.nm)
@@ -74,5 +74,9 @@ sample_sums(physeq_rare) #Double check that the sub-sampling worked, this should
 data.rare <- as(sample_data(physeq_rare), "data.frame")
 saveRDS(physeq_rare, file = "../output/ati-physeq-1000.RDS", compress = TRUE)
 
-
+##Export the raw otu and taxonomy file
+otu <- otu_table(physeq_nonrare)
+tax <- tax_table(physeq_nonrare)
+write.csv(otu, "../output/ati-moorea-asv-table.csv")
+write.csv(tax, "../output/ati-moorea-tax-table.csv")
 
