@@ -4,31 +4,17 @@ setwd("~/Documents/OSUDocs/Projects/French_Polynesia/Around_the_island/moorea_at
 
 ##Read in the fish data & the micro alpha diversity data so that we can combine the two
 
-fish <- read.csv("../input/AroundIsland_FishData_01302022.csv")
+fish <- read.csv("../input/fish_summaries.csv")
 rich <- readRDS("../../alpha_diversity/output/ati-erich.RDS")
 
 #Make the site number data column the same name 
-rich$Site_number <- rich$site.number
+rich$Site <- rich$site.number
 
 #Merge the two datasets by Site_numbeer
-fish.rich <- merge(fish, rich, by = "Site_number")
+fish.rich <- merge(fish, rich, by = "Site")
 #Get rid of unuseful columns and/or repeated columns 
-drops <- c("site.number","sample_type", "lat", "long", "collection_time", "collection_date", "sample.id")
+drops <- c("site.number","Site_name", "sample_type", "lat", "long", "collection_time", "collection_date", "sample.id")
 fish.rich <- fish.rich[ , !(names(fish.rich) %in% drops)]
-View(fish.rich)
-
-#Add microbial evenness
-fish.rich$evenness <- fish.rich$Shannon/log(fish.rich$Observed)
-
-##Let's add the Turbinaria nutrient data that overlaps 
-turb.nut <- read.csv("../../../metadata/Turbinaria_CHN_May_2021_compiled.csv")
-View(turb.nut)
-keeps <- c("Site_number","Weight_ug", "Percent_C", "Percent_H", "Percent_N", "C_to_N_ratio")
-turb.nut <- turb.nut[ , (names(turb.nut) %in% keeps)]
-View(turb.nut)    
-
-#Merge the turb.nut with the erich data! 
-fish.rich <- merge(fish.rich, turb.nut, by = "Site_number")    
 View(fish.rich)
 
 #Output the csv
@@ -42,59 +28,93 @@ library(plyr)
 library(tidyverse)
 library(cowplot)
 
-##Total Fish & Microbe Alpha
-p1 <- ggplot(fish.rich, aes(x = FISH_TOT, y = Observed)) +
+##Total Herbivore/Min & Microbe Alpha
+p1 <- ggplot(fish.rich, aes(x = Herbivore_total, y = Observed)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("Total Fish Abundance/Minute") +
+  xlab("Total Herbivorous Fish Counts/Minute") +
   ylab("Microbial Species Richness") +
   theme_bw()
 
-p2 <- ggplot(fish.rich, aes(x = FISH_TOT, y = Shannon)) +
+p2 <- ggplot(fish.rich, aes(x = Herbivore_total, y = Shannon)) +
   geom_point(size = 2) +
   geom_smooth(method = lm) +
-  xlab("Total Fish Abundance/Minute") +
+  xlab("Total Herbivorous Fish Counts/Minute") +
   ylab("Microbial Shannon Diversity") +
   theme_bw()
 
-p3 <- ggplot(fish.rich, aes(x = FISH_TOT, y = FaithPD)) +
+p3 <- ggplot(fish.rich, aes(x = Herbivore_total, y = FaithPD)) +
   geom_point(size = 2) +
   geom_smooth(method = lm) +
-  xlab("Total Fish Abundance/Minute") +
+  xlab("Total Herbivorous Fish Counts/Minute") +
   ylab("Microbial Phylogenetic Diversity") +
   theme_bw()
 
-p4 <- ggplot(fish.rich, aes(x = FISH_TOT, y = evenness)) +
+p4 <- ggplot(fish.rich, aes(x = Herbivore_total, y = evenness)) +
   geom_point(size = 2) +
   geom_smooth(method = lm) +
-  xlab("Total Fish Abundance/Minute") +
+  xlab("Total Herbivorous Fish Counts/Minute") +
   ylab("Microbial Evenness") +
   theme_bw()
 
 plot_grid(p1, p2, p3, p4)
-ggsave("../output/alpha_vs_fishabund.pdf", plot = last_plot())
+ggsave("../output/alpha_vs_herbabund.pdf", plot = last_plot())
 
 
-##Total Fish & Microbe Alpha
-p5 <- ggplot(fish.rich, aes(x = FISH_TOT, y = Percent_N)) +
+
+##Total Corallivores/Min & Microbe Alpha
+#Remove the weird outlier @site 173
+fish.rich.outrm <- subset(fish.rich, Site !="173")
+p5 <- ggplot(fish.rich.outrm, aes(x = Corallivore_total, y = Observed)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("Total Fish Abundance/Minute") +
+  xlab("Total Corallivorous Fish Counts/Minute") +
+  ylab("Microbial Species Richness") +
+  theme_bw()
+
+p6 <- ggplot(fish.rich.outrm, aes(x = Corallivore_total, y = Shannon)) +
+  geom_point(size = 2) +
+  geom_smooth(method = lm) +
+  xlab("Total Corallivorous Fish Counts/Minute") +
+  ylab("Microbial Shannon Diversity") +
+  theme_bw()
+
+p7 <- ggplot(fish.rich.outrm, aes(x = Corallivore_total, y = FaithPD)) +
+  geom_point(size = 2) +
+  geom_smooth(method = lm) +
+  xlab("Total Corallivorous Fish Counts/Minute") +
+  ylab("Microbial Phylogenetic Diversity") +
+  theme_bw()
+
+p8 <- ggplot(fish.rich.outrm, aes(x = Corallivore_total, y = evenness)) +
+  geom_point(size = 2) +
+  geom_smooth(method = lm) +
+  xlab("Total Corallivorous Fish Counts/Minute") +
+  ylab("Microbial Evenness") +
+  theme_bw()
+
+plot_grid(p5, p6, p7, p8)
+ggsave("../output/alpha_vs_corallabund_outrm.pdf", plot = last_plot())
+
+
+##Total Fish & Turbinaria nutrient correlations
+p9 <- ggplot(fish.rich, aes(x = Herbivore_total, y = Percent_N)) +
+  geom_point(size=2) +
+  geom_smooth(method=lm) +
+  xlab("Total Herbivore Abundance/Minute") +
   ylab("%N") +
   theme_bw()
 
-p6 <- ggplot(fish.rich, aes(x = FISH_TOT, y = C_to_N_ratio)) +
+p10 <- ggplot(fish.rich, aes(x = Corallivore_total, y = Percent_N)) +
   geom_point(size = 2) +
   geom_smooth(method = lm) +
-  xlab("Total Fish Abundance/Minute") +
-  ylab("C/N ratio") +
+  xlab("Total Coralllivorous Fish Abundance/Minute") +
+  ylab("%N") +
   theme_bw()
 
 
-plot_grid(p5, p6)
+plot_grid(p9, p10)
 ggsave("../output/TurbN_vs_fishabund.pdf", plot = last_plot())
-
-
 
 ##Can we use the full fish dataset?
 fish.turb<- merge(fish, turb.nut, by = "Site_number")    

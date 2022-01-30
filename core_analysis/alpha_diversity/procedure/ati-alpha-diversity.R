@@ -28,20 +28,26 @@ erich$evenness <- erich$Shannon/log(erich$Observed)
 rownames(erich) <- rownames(data.rare)
 erich$sample.id <- rownames(erich)
 erich$location <- data.rare$location
-erich$site.number <- data.rare$site.number
+erich$site.number <- data.rare$Site_number
 erich$lat <- data.rare$lat
 erich$long <- data.rare$long
 erich$sample_type <- data.rare$sample_type
 erich$collection_time <- data.rare$collection_time
 erich$collection_date <- data.rare$collection_date
-erich$Phosphate <- data.rare$Phosphate
-erich$Silicate <- data.rare$Silicaate
-erich$Nitrite_plus_Nitrate <- data.rare$Nitrite_plus_Nitrate
-erich$Ammonia <- data.rare$Ammonia
+erich$Phosphate <- data.rare$Water_Phosphate
+erich$Silicate <- data.rare$Water_Silicate
+erich$Nitrite_plus_Nitrate <- data.rare$Water_Nitrite_plus_Nitrate
+erich$Ammonia <- data.rare$Water_Ammonia
+erich$N.P <- ((erich$Ammonia + erich$Nitrite_plus_Nitrate)/erich$Phosphate)
+erich$Percent_N <- data.rare$Turb_Percent_N
+erich$Percent_C <- data.rare$Turb_Percent_C
+erich$Percent_H <- data.rare$Turb_Percent_H
+erich$C_to_N <- data.rare$Turb_C_to_N_ratio
+
 
 #Output the RDS file and the metadata as a CSV with alpha diversity metrics 
 saveRDS(erich, file = "../output/ati-erich.RDS", compress = TRUE)
-erich <- readRDS("../output/ati-erich.RDS")
+#erich <- readRDS("../output/ati-erich.RDS")
 write.csv(erich, "../output/ati-metadata-with-alphadiv.csv" )
 #erich <- readRDS("../output/ati-erich.RDS")
 
@@ -68,9 +74,6 @@ p3 <- ggplot(erich, aes(x = Ammonia, y = evenness)) +
   ylab("Microbial Evenness") +
   theme_bw()
 
-##How about adding an N:P ratio so we can plot this too?
-erich$N.P <- (erich$Ammonia + erich$Nitrite_plus_Nitrate)/erich$Phosphate
-
 p4 <- ggplot(erich, aes(x = N.P, y = evenness)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
@@ -81,45 +84,34 @@ p4 <- ggplot(erich, aes(x = N.P, y = evenness)) +
 plot_grid(p1, p2, p3, p4) #from library "cowplot"
 ggsave("../output/plots/evenness_vs_nutrients.pdf", plot = last_plot())
 
-##Can we add the Turbinaria Nutrient data? 
-turb.nut <- read.csv("../../../metadata/Turbinaria_CHN_May_2021_compiled.csv")
-View(turb.nut)
-keeps <- c("Site_number","Weight_ug", "Percent_C", "Percent_H", "Percent_N", "C_to_N_ratio")
-turb.nut <- turb.nut[ , (names(turb.nut) %in% keeps)]
-View(turb.nut)    
 
-#Merge the turb.nut with the erich data! 
-erich$Site_number <- erich$site.number
-rich.turb <- merge(erich, turb.nut, by = "Site_number")    
-View(rich.turb)
+#Trial the same as above but with the %N
 
-#Trial the same as above but with the Turb
-
-p5 <- ggplot(rich.turb, aes(x = Percent_N, y = Observed)) +
+p5 <- ggplot(erich, aes(x = Percent_N, y = Observed)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("/%N") +
+  xlab("%N") +
   ylab("Microbial Species Richness") +
   theme_bw()
 
-p6 <- ggplot(rich.turb, aes(x = Percent_N, y = Shannon)) +
+p6 <- ggplot(erich, aes(x = Percent_N, y = Shannon)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("/%N") +
+  xlab("%N") +
   ylab("Microbial Shannon Diversity") +
   theme_bw()
 
-p7 <- ggplot(rich.turb, aes(x = Percent_N, y = FaithPD)) +
+p7 <- ggplot(erich, aes(x = Percent_N, y = FaithPD)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("/%N") +
+  xlab("%N") +
   ylab("Microbial Phylogenetic Diversity") +
   theme_bw()
 
-p8 <- ggplot(rich.turb, aes(x = Percent_N, y = evenness)) +
+p8 <- ggplot(erich, aes(x = Percent_N, y = evenness)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("/%N") +
+  xlab("%N") +
   ylab("Microbial Evenness") +
   theme_bw()
 

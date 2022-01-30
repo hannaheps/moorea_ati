@@ -20,7 +20,7 @@ setwd("~/Documents/OSUDocs/Projects/French_Polynesia/Around_the_island/moorea_at
 physeq <- qza_to_phyloseq("../../../bioinformatics/output/ati-filtered-noeuk-table.qza", #feature table
                           "../../../bioinformatics/output/tree-building/ati-rooted-tree.qza", #tree
                           "../../../bioinformatics/output/ati-tax-without-spaces.qza", #taxonomy reference
-                          "../../../bioinformatics/input/metadata_ati.txt") #mapping file
+                          "../../../metadata/metadata_with_turb.txt") #mapping file
 
 
 #Check the taxonomic classification is correct
@@ -50,7 +50,7 @@ all.taxa <- all.taxa[!(all.taxa %in% bad.taxa)]
 physeq.nm <- prune_taxa(all.taxa, physeq)
 
 #make a sample data frame
-sample.data <- as(sample_data(physeq.nm), "data.frame") #89 observations, 14 variables
+sample.data <- as(sample_data(physeq.nm), "data.frame") #89 observations, 18 variables
 
 #Decontamination cannot be done because control sample had 2 reads only! Clean samples?? OR bad barcodes.. 
 

@@ -16,33 +16,19 @@ setwd("~/Documents/OSUDocs/Projects/French_Polynesia/Around_the_island/moorea_at
 #Read in the phyloseq object (output from pre-processing R script)
 physeq <- readRDS("../../pre_processing/output/ati-physeq.RDS")
 data <- as(sample_data(physeq), "data.frame")
-##For now I am going to add the Turbinaria nutrient data here, but eventually this needs to be aded
-#to the metadata and put into the pre-processing script
-turb.nut <- read.csv("../../../metadata/Turbinaria_CHN_May_2021_compiled.csv")
-View(turb.nut)
-keeps <- c("Site_number","Weight_ug", "Percent_C", "Percent_H", "Percent_N", "C_to_N_ratio")
-turb.nut <- turb.nut[ , (names(turb.nut) %in% keeps)]
-View(turb.nut)  
-#Combine data + turb
-data.turb <- merge(data, turb.nut, by = "Site_number")    
-View(data.turb)
 
 #Using the rarefied data for alpha diversity
 physeq_rare <- readRDS("../../pre_processing/output/ati-physeq-1000.RDS") 
 data.rare <- as(sample_data(physeq_rare), "data.frame")
-#Add turb
-data.rare.turb <- merge(data.rare, turb.nut, by = "Site_number")    
-View(data.rare.turb)
-
+data.rare$sample.id <- rownames(data.rare)
 
 #Make relative abundance object from unrarefied
 physeq_ra <- transform_sample_counts(physeq, function(x) x/ sum(x))
 data.ra <- as(sample_data(physeq), "data.frame")
-data.ra.turb <- merge(data.ra, turb.nut, by = "Site_number")
+
 #rarefied relative abundances
 physeq_r_ra <- transform_sample_counts(physeq_rare, function(x) x/ sum(x))
 data.r.ra <- as(sample_data(physeq_r_ra), "data.frame")
-data.rra.turb <- merge(data.r.ra, turb.nut, by = "Site_number")
 
 
 #How about just look at the bar plots by sample, since there are only 89. 
@@ -166,4 +152,13 @@ as.factor(psychro.melt$OTU)
 ##Can we do an adonis with a continous variable? 
 
 bc <- phyloseq::distance(physeq_rare, method = "bray")
-adonis(bc ~ Percent_N, data = data.rare.turb)
+adonis(otu_table(physeq_rare) ~ Turb_Percent_N, data = data.rare, method = "bray")
+View(otu_table(physeq_rare))
+##THe problem is that there are only 87 samples in the data frame, why??? 
+??adonis()
+adonis(bc ~ Turb_Percent_N, data = data.rare)
+
+View(data.rare)
+MASS::isoMDS(bc)
+??isoMDS()
+
