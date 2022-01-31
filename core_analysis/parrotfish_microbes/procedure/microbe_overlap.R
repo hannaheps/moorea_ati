@@ -14,22 +14,14 @@ library(RColorBrewer)
 
 ##read in the rarefied phyloseq object
 physeq_rare <- readRDS("../../pre_processing/output/ati-physeq-1000.RDS") 
-data.rare <- as(sample_data(physeq_rare), "data.frame")
+physeq_rra <- transform_sample_counts(physeq_rare, function(x) x/ sum(x))
+data.rra <- as(sample_data(physeq_rra), "data.frame")
 
 
 #Subset to taxa that overlap with Leila's parrotfish data
-physeq.overlap <- subset_taxa(physeq_rare, Family == c("Alcanivoracaceae", "Bacteriovoracaceae", "Bacteroidaceae",
-                                                       "Clostridiaceae", "Colwelliaceae", "Corynebacteriaceae", "Cryomorphaceae",
-                                                       "Dermacoccaceae", "Desulfobulbaceae", "Dietziaceae", "Flammeovirgaceae", 
-                                                       "Flavobacteriaceae", "Hahellaceae", "Hyphomicrobiaceae", "Lachnospiraceae",
-                                                       "Moraxellaceae", "Paenibacillaceae", "Pirellulaceae", "Piscirickettsiaceae",
-                                                       "Prevotellaceae", "Pseudoalteromonadaceae", "Pseudomonadaceae", "Puniceicoccaceae",
-                                                       "Rhodobacteraceae", "Rhodospirillaceae", "Simkaniaceae", "Sphingomonadaceae",
-                                                       "Spirochaetaceae", "Streptococcaceae", "Vibrionaceae", "Xanthomonadaceae", "Xenococcaceae"))
 
 
-
-physeq.overlap <- subset_taxa(physeq_rare, Family == "Alcanivoracaceae" | Family == "Bacteriovoracaceae" | Family == "Bacteroidaceae" | 
+physeq.overlap <- subset_taxa(physeq_rra, Family == "Alcanivoracaceae" | Family == "Bacteriovoracaceae" | Family == "Bacteroidaceae" | 
                                 Family == "Clostridiaceae" | Family == "Colwelliaceae" | Family =="Corynebacteriaceae" | Family == "Cryomorphaceae" |
                                 Family == "Dermacoccaceae" | Family == "Desulfobulbaceae" | Family == "Dietziaceae" | Family == "Flammeovirgaceae" |
                                 Family ==  "Flavobacteriaceae" | Family == "Hahellaceae" | Family == "Hyphomicrobiaceae" | Family == "Lachnospiraceae" |
@@ -40,18 +32,18 @@ physeq.overlap <- subset_taxa(physeq_rare, Family == "Alcanivoracaceae" | Family
                                 Family == "Xenococcaceae")
 
 
-physeq.overlap.ra <- transform_sample_counts(physeq.overlap, function(x) x/ sum(x))
-physeq.overlap.ra.melt <- psmelt(physeq.overlap.ra)
+
+physeq.overlap.ra.melt <- psmelt(physeq.overlap)
 View(physeq.overlap.ra.melt)
 
 keeps <- c("Site_number","Abundance", "Family")
 family.abund <- physeq.overlap.ra.melt[ , (names(physeq.overlap.ra.melt) %in% keeps)]
   
 rownames(family.abund) <- NULL
-spread(family.abund, Family, Abundance)
+
 
 # Julianna
-trial <- family.abund %>% 
+family.abund.sum <- family.abund %>% 
   group_by(Family, Site_number) %>% 
   summarize(abundance = sum(Abundance)) %>% view()
 

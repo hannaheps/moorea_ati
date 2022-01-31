@@ -149,16 +149,93 @@ write.csv(psychro.melt, "../output/psychrobacter_relabund.csv")
 as.factor(psychro.melt$OTU)
 
 
-##Can we do an adonis with a continous variable? 
+##Can we do an adonis with a continous variable? YES!
+#It's called a distance-based linear model (distlm) when it's with continuous
+#Remove all the samples with NAs in Percent_N
+physeq.percN <- subset_samples(physeq_rare, Site_number !=  "83" & Site_number != "Cook's 1")
+percN.data <- as(sample_data(physeq.percN), "data.frame")
 
+bc <- phyloseq::distance(physeq.percN, method = "bray")
+adonis(bc ~ Turb_Percent_N, data = percN.data, method = "bray")
+
+#               Df SumsOfSqs MeanSqs F.Model      R2 Pr(>F)  
+#Turb_Percent_N  1    0.4025 0.40252  2.3777 0.02721  0.023 *
+#Residuals      85   14.3895 0.16929         0.97279         
+#Total          86   14.7920                 1.00000         
+
+bray_curtis_pcoa <- ecodist::pco(bc)
+# All components could be found here: 
+# bray_curtis_pcoa$vectors
+# But we only need the first two to demonstrate what we can do:
+bray_curtis_pcoa_df <- data.frame(pcoa1 = bray_curtis_pcoa$vectors[,1], 
+                                  pcoa2 = bray_curtis_pcoa$vectors[,2])
+
+
+bray_curtis_plot <- ggplot(data = bray_curtis_pcoa_df, aes(x=pcoa1, y=pcoa2)) +
+  geom_point() +
+  labs(x = "PCo1",
+       y = "PCo2", 
+       title = "Bray-Curtis PCoA") +
+  theme(title = element_text(size = 10)) # makes titles smaller
+
+
+bray_curtis_pcoa_df <- cbind(bray_curtis_pcoa_df,
+                                   percN = percN.data$Turb_Percent_N)
+
+
+# Creates a plot
+bray_curtis_percN_plot <- ggplot(data = bray_curtis_pcoa_df, aes(x=pcoa1, y=pcoa2, color = percN)) + 
+  geom_point(size = 3) +
+  labs(x = "PC1",
+       y = "PC2",
+       title = "PCoA of Microbial Communities vs  %N") +
+  theme_bw()
+
+bray_curtis_percN_plot
+ggsave("../output/PCoA_percN.pdf", plot = last_plot())
+
+
+#distance-based linear model (distlm) when it's with continuous
 bc <- phyloseq::distance(physeq_rare, method = "bray")
-adonis(otu_table(physeq_rare) ~ Turb_Percent_N, data = data.rare, method = "bray")
-View(otu_table(physeq_rare))
-##THe problem is that there are only 87 samples in the data frame, why??? 
-??adonis()
-adonis(bc ~ Turb_Percent_N, data = data.rare)
-
 View(data.rare)
-MASS::isoMDS(bc)
-??isoMDS()
+adonis(bc ~ Water_Phosphate, data = data.rare, method = "bray")
+#Df SumsOfSqs MeanSqs F.Model      R2 Pr(>F)
+#Water_Phosphate  1    0.2442 0.24417  1.4123 0.01597  0.164
+#Residuals       87   15.0414 0.17289         0.98403       
+#Total           88   15.2855                 1.00000         
 
+
+##distlm for fishy things
+fish <- read.csv("../../parrotfish_microbes/input/fish_summaries.csv")
+fish$Site_number <- fish$Site
+data.full <- left_join(data.rare, fish, by = "Site_number")
+sample_data(physeq_rare)$Herbivore_total <- data.full$Herbivore_total
+sample_data(physeq_rare)$Corallivore_total <- data.full$Corallivore_total
+#Remove samples that don't have any fishy data
+physeq.fish <- subset_samples(physeq_rare, Herbivore_total !=  "NA")
+fish.data <- as(sample_data(physeq.fish), "data.frame")
+
+#Let's do the adonis
+bc.fish <- phyloseq::distance(physeq.fish, method = "bray")
+adonis(bc.herb ~ Herbivore_total, data = fish.data, method = "bray")
+#Df SumsOfSqs MeanSqs F.Model      R2 Pr(>F)  
+#Herbivore_total  1    0.2621 0.26210  1.6706 0.04819  0.096 .
+#Residuals       33    5.1774 0.15689         0.95181         
+#Total           34    5.4395                 1.00000  
+
+adonis(bc.fish ~ Corallivore_total, data = fish.data, method = "bray")
+#Df SumsOfSqs MeanSqs F.Model      R2 Pr(>F)
+#Corallivore_total  1    0.1716 0.17155  1.0747 0.03154   0.35
+#Residuals         33    5.2680 0.15963         0.96846       
+#Total             34    5.4395                 1.00000   
+
+##Can we extract PCoA vector 1 & 2 to plot around the island to help Nyssa's group?
+bc <- phyloseq::distance(physeq_rare, method = "bray")
+bray_curtis_pcoa <- ecodist::pco(bc)
+# bray_curtis_pcoa$vectors
+bray_curtis_pcoa_df <- data.frame(pcoa1 = bray_curtis_pcoa$vectors[,1], 
+                                  pcoa2 = bray_curtis_pcoa$vectors[,2])
+bray_curtis_pcoa_df <- cbind(bray_curtis_pcoa_df,
+                             Site_number = data.rare$Site_number)
+
+write.csv(bray_curtis_pcoa_df, "../output/pcoa_vectors.csv")

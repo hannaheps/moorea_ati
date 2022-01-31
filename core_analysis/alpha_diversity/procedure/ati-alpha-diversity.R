@@ -53,36 +53,36 @@ write.csv(erich, "../output/ati-metadata-with-alphadiv.csv" )
 
 
 ###Can we do a super quick visual correlation of alpha diversity and nutrients??
-p1 <- ggplot(erich, aes(x = Nitrite_plus_Nitrate, y = evenness)) +
+p1 <- ggplot(erich, aes(x = Silicate, y = Observed)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("Nitrite + Nitrate") +
-  ylab("Microbial Evenness") +
+  xlab("Silicate") +
+  ylab("Microbial Species Richness") +
   theme_bw()
 
-p2 <- ggplot(erich, aes(x = Phosphate, y = evenness)) +
+p2 <- ggplot(erich, aes(x = Silicate, y = Shannon)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("Phosphate") +
-  ylab("Microbial Evenness") +
+  xlab("Silicate") +
+  ylab("Microbial Shannon Diversity") +
   theme_bw()
 
-p3 <- ggplot(erich, aes(x = Ammonia, y = evenness)) +
+p3 <- ggplot(erich, aes(x = Silicate, y = FaithPD)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("Ammonia") +
-  ylab("Microbial Evenness") +
+  xlab("Silicate") +
+  ylab("Microbial Phylogenetic Diversity") +
   theme_bw()
 
-p4 <- ggplot(erich, aes(x = N.P, y = evenness)) +
+p4 <- ggplot(erich, aes(x = Silicate, y = evenness)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("N:P Ratio") +
+  xlab("Silicate") +
   ylab("Microbial Evenness") +
   theme_bw()
 
 plot_grid(p1, p2, p3, p4) #from library "cowplot"
-ggsave("../output/plots/evenness_vs_nutrients.pdf", plot = last_plot())
+ggsave("../output/plots/microbialdiv_vs_silicate.pdf", plot = last_plot())
 
 
 #Trial the same as above but with the %N
@@ -117,6 +117,7 @@ p8 <- ggplot(erich, aes(x = Percent_N, y = evenness)) +
 
 plot_grid(p5, p6, p7, p8) #from library "cowplot"
 
+ggsave("../output/plots/microbialdiv_percN.pdf", plot = last_plot())
 
 
 
