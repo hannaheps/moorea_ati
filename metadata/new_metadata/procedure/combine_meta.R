@@ -1,6 +1,6 @@
 ###Quick script to combine the Turbinaria Nutrient Data with the rest of the metadata for microbes
 
-setwd("~/Documents/OSUDocs/Projects/French_Polynesia/Around_the_island/moorea_ati/metadata/procedure/")
+setwd("~/Documents/OSUDocs/Projects/French_Polynesia/Around_the_island/moorea_ati/metadata/new_metadata/procedure/")
 
 #read in the metadata and the turbinaria data
 meta <- read.csv("../metadata_ati.csv")
