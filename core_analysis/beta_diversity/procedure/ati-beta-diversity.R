@@ -195,6 +195,74 @@ bray_curtis_percN_plot
 ggsave("../output/PCoA_percN.pdf", plot = last_plot())
 
 
+##JANUARY 2023
+##Running the PCoA
+
+##First up is Bray Curtis
+bc <- phyloseq::distance(physeq_rare, method = "bray")
+#If we want to look at relationships
+#adonis(bc ~ Turb_Percent_N, data = percN.data, method = "bray")
+
+bray_curtis_pcoa <- ecodist::pco(bc)
+
+# All components could be found here: 
+# bray_curtis_pcoa$vectors
+# But we only need the first two to demonstrate what we can do:
+bray_curtis_pcoa_df <- data.frame(pcoa1 = bray_curtis_pcoa$vectors[,1], 
+                                  pcoa2 = bray_curtis_pcoa$vectors[,2])
+
+
+bray_curtis_plot <- ggplot(data = bray_curtis_pcoa_df, aes(x=pcoa1, y=pcoa2)) +
+  geom_point() +
+  labs(x = "PCo1",
+       y = "PCo2", 
+       title = "Bray-Curtis PCoA") +
+  theme(title = element_text(size = 10)) # makes titles smaller
+
+
+ggsave("../output/plots/PCoA_bray.pdf", plot = last_plot())
+
+
+###Weighted UniFrac
+
+wuf <- phyloseq::distance(physeq_rare, method = "wunifrac")
+#If we want to look at relationships
+#adonis(bc ~ Turb_Percent_N, data = percN.data, method = "bray")
+
+wunifrac_pcoa <- ecodist::pco(wuf)
+
+# All components could be found here: 
+# bray_curtis_pcoa$vectors
+# But we only need the first two to demonstrate what we can do:
+wunifrac_pcoa_df <- data.frame(pcoa1 = wunifrac_pcoa$vectors[,1], 
+                               pcoa2 = wunifrac_pcoa$vectors[,2])
+
+
+wunifrac_plot <- ggplot(data = wunifrac_pcoa_df, aes(x=pcoa1, y=pcoa2)) +
+  geom_point() +
+  labs(x = "PCo1",
+       y = "PCo2", 
+       title = "Weighted UniFrac PCoA") +
+  theme(title = element_text(size = 10)) # makes titles smaller
+
+
+ggsave("../output/plots/PCoA_WeightedUniFrac.pdf", plot = last_plot())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #distance-based linear model (distlm) when it's with continuous
 bc <- phyloseq::distance(physeq_rare, method = "bray")
 View(data.rare)
