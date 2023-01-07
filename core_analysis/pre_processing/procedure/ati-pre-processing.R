@@ -17,10 +17,10 @@ setwd("~/Documents/OSUDocs/Projects/French_Polynesia/Around_the_island/moorea_at
 #use qiime2R to upload data into a phyloseq object
 
 #For final use the following code
-physeq <- qza_to_phyloseq("../../../bioinformatics/output/ati-filtered-noeuk-table.qza", #feature table
-                          "../../../bioinformatics/output/tree-building/ati-rooted-tree.qza", #tree
-                          "../../../bioinformatics/output/ati-tax-without-spaces.qza", #taxonomy reference
-                          "../../../metadata/metadata_with_turb.txt") #mapping file
+physeq <- qza_to_phyloseq("../../../bioinformatics/new_analysis/output/ati-filtered-noeuk-table.qza", #feature table
+                          "../../../bioinformatics/new_analysis/output/tree-building/ati-rooted-tree.qza", #tree
+                          "../../../bioinformatics/new_analysis/output/ati-tax-without-spaces.qza", #taxonomy reference
+                          "../../../metadata/new_metadata/output/metadata_with_turb.txt") #mapping file
 
 
 #Check the taxonomic classification is correct
