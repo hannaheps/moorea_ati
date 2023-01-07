@@ -1,0 +1,548 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r setup, include=TRUE}
+
+####THIS CODE REQUIRES FILES FROM TOM ADAM FOR MAPPING##
+##currently not public - located in ATI workshop google data sheet##
+library(ggplot2)
+library(maptools)
+library(reshape2)
+library(PBSmapping)
+library(sp)
+library(mapproj)
+library(plyr)
+library(data.table)
+library(rgeos)
+library(ggmap)
+library(rgdal)
+library(spatstat)
+library(vegan)
+library(GGally)
+library(raster)
+library(rgdal)
+library(dplyr)
+library(sf)
+library(kriging)
+library(ggnewscale)
+library(ggspatial)
+library(colorRamps)
+
+#nonfunc lib - req 4.0.2 library(marmap)
+
+setwd("/Users/kal/Desktop")
+#overlap.microbe <-read.csv("family_abund_JR3.csv", header = T)
+overlap.microbe <-read.csv("pcoa_vectors2.csv", header = T)
+dim(overlap.microbe)
+#ggpairs(overlap.microbe)
+
+#Lachnospiraceae
+
+#overlap.Lachnospiraceae <- dplyr::select(overlap.microbe, Site_number, Lachnospiraceae)
+#overlap.Lachnospiraceae
+
+#dim(overlap.Lachnospiraceae)
+
+
+
+
+################Format Moorea DEM so we can use it as a map###################################
+dem <- raster('dtm_merged_5m.tif') ##CANNOT ACCESS FILE
+
+dem_land <- raster("dem_land.tif")
+mo.shp <- readOGR('Moorea_outline/Isle_outline_gcs84.shp')
+mo.shp.dem <- spTransform(mo.shp,projection(dem_land)) # transform to same projection as dem
+mo.sf <- st_as_sf(mo.shp.dem)
+
+
+# land --------------------------------------------------------------------
+# hill shade
+slp <- terrain(dem_land,opt='slope')
+asp <- terrain(dem_land,opt='aspect')
+hill <- hillShade(slp,asp)# compute hillshade 
+plot(hill)
+
+# transform rasters for ggplot
+dem.p  <-  rasterToPoints(dem_land)
+dem.df <-  data.frame(dem.p)
+colnames(dem.df) = c("x", "y", "alt")
+
+hill.p  <-  rasterToPoints(hill)
+hill.df <-  data.frame(hill.p)
+colnames(hill.df) = c("x", "y", "alt")
+
+
+#########Get coordinates in UTM
+nuts <-read.csv("water_column_nutrients_May2021.csv", header = T) 
+
+spdf<-SpatialPointsDataFrame(coords = nuts[c('Lon','Lat')], data = nuts, proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+nutsUTM<-spTransform(spdf, projection(mo.shp.dem))
+nutsUTM.df <- as.data.frame(nutsUTM)
+
+
+#####plot
+
+ggplot() +
+  theme_bw() +   
+  geom_raster(data=hill.df, aes(x=x,y=y,fill = alt),show.legend=FALSE) + scale_fill_gradientn(colors = grey(50:100/100)) +
+  new_scale("fill") +
+  geom_sf(data = mo.sf, fill=NA, lwd = 0.2) +
+  geom_point(data= nutsUTM.df, aes(Lon.1, Lat.1), size = 2)+
+  coord_sf() +
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank()) +  
+  	theme(panel.grid.major = element_line(color = 'white', linetype = "dashed",size = 0.5),
+        plot.background=element_rect(fill='white'))
+
+##################################
+area2.df <- nutsUTM.df[,c(2,14,15)]
+head(area2.df)
+micro.df <- overlap.microbe[,c(1:3)]
+
+##colnames(micro.df) <- c("Site_number","Alcanivoracaceae", "Bacteriovoracaceae", "Bacteroidaceae", "Colwelliaceae", "Corynebacteriaceae", "Cryomorphaceae", "Desulfobulbaceae", "Flammeovirgaceae", "Flavobacteriaceae", "Hyphomicrobiaceae", "Lachnospiraceae", "Moraxellaceae", "Paenibacillaceae", "Pirellulaceae", "Piscirickettsiaceae", "Prevotellaceae",  "Pseudoalteromonadaceae", "Pseudomonadaceae", "Puniceicoccaceae", "Rhodobacteraceae", "Rhodospirillaceae", "Simkaniaceae", "Sphingomonadaceae", "Spirochaetaceae", "Streptococcaceae", "Vibrionaceae", "Xanthomonadaceae", "Xenococcaceae")
+
+colnames(micro.df) <- c("Site_number","pcoa1", "pcoa2")
+
+micro.df.latlong <- merge(micro.df,area2.df, by="Site_number")
+head(micro.df.latlong)
+str(micro.df.latlong)
+
+
+###
+
+ashapem<-read.csv("nut_boundary2.csv", header = T)
+ashapem<-as.matrix(ashapem[,2:3])
+##### the borderpolygon object is a list that will be part of the kriging function
+borderpolygon <- list(data.frame(ashapem[,1], ashapem[,2]))
+
+
+head(micro.df.latlong)
+
+#########################pcoas
+krig1 <- kriging(micro.df.latlong$Lon.1, micro.df.latlong$Lat.1, micro.df.latlong$pcoa2, pixels=1000,polygons=borderpolygon) #random
+str(krig1)
+krig2 <- krig1$map
+head(krig2)
+#####
+
+ggplot() +
+  theme_bw() +
+	geom_point(data=krig2, aes(x=x, y=y, colour=pred), size=4) + 
+	scale_colour_gradientn(name="",colours = rev(rainbow(10))) +   
+  geom_raster(data=hill.df, aes(x=x,y=y,fill = alt),show.legend=FALSE) + scale_fill_gradientn(colors = grey(50:100/100)) +
+  new_scale("fill") +
+  geom_sf(data = mo.sf, fill=NA, lwd = 0.2) +
+  geom_point(data= micro.df.latlong, aes(Lon.1, Lat.1), size = 1)+
+  coord_sf() +
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank()) +  
+  	theme(panel.grid.major = element_line(color = 'white', linetype = "dashed",size = 0.5),
+        plot.background=element_rect(fill='white'))
+
+ggsave("pcoa2.png", bg = "transparent", limitsize = FALSE, width = 20, height = 20, dpi = 220)
+
+########################Flavobacteriaceae
+#krig1 <- kriging(micro.df.latlong$Lon.1, micro.df.latlong$Lat.1, micro.df.latlong$Flavobacteriaceae, pixels=1000,polygons=borderpolygon) #random
+#str(krig1)
+#krig2 <- krig1$map
+#head(krig2)
+#####
+
+#ggplot() +
+ # theme_bw() +
+#	geom_point(data=krig2, aes(x=x, y=y, colour=pred), size=4) + 
+#	scale_colour_gradientn(name="",colours = rev(rainbow(10))) +   
+#  geom_raster(data=hill.df, aes(x=x,y=y,fill = alt),show.legend=FALSE) + scale_fill_gradientn(colors = grey(50:100/100)) +
+#  new_scale("fill") +
+#  geom_sf(data = mo.sf, fill=NA, lwd = 0.2) +
+#  geom_point(data= micro.df.latlong, aes(Lon.1, Lat.1), size = 1)+
+#  coord_sf() +
+#  theme(axis.line=element_blank(),
+ #       axis.text.x=element_blank(),
+#        axis.text.y=element_blank(),
+#        axis.ticks=element_blank(),
+#        axis.title.x=element_blank(),
+#        axis.title.y=element_blank()) +  
+#  	theme(panel.grid.major = element_line(color = 'white', linetype = "dashed",size = 0.5),
+#        plot.background=element_rect(fill='white'))
+
+#ggsave("pcoa_vectors.csv", bg = "transparent", limitsize = FALSE, width = 20, height = 20, dpi = 220)
+
+
+
+
+``````
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##########
+### create semivariogram
+
+area2.df<-df
+
+colnames(area2.df) <- c("site", "Phosphate", "Silicate", "Nitrate_plus_Nitrite", "Amonia", "longUTM", "latUTM")
+head(area2.df)
+str(area2.df)
+
+
+ashapem<-read.csv("nut_boundary2.csv", header = T)
+ashapem<-as.matrix(ashapem[,2:3])
+
+
+##### the borderpolygon object is a list that will be part of the kriging function
+
+borderpolygon <- list(data.frame(ashapem[,1], ashapem[,2]))
+
+head(area2.df)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+######
+
+micro.df <- overlap.microbe[,c(1:29)]
+head(micro.df)
+str(micro.df)
+
+colnames(micro.df) <- c("Site_number","Alcanivoracaceae", "Bacteriovoracaceae", "Bacteroidaceae", "Colwelliaceae", "Corynebacteriaceae", "Cryomorphaceae", "Desulfobulbaceae", "Flammeovirgaceae", "Flavobacteriaceae", "Hyphomicrobiaceae", "Lachnospiraceae", "Moraxellaceae", "Paenibacillaceae", "Pirellulaceae", "Piscirickettsiaceae", "Prevotellaceae",  "Pseudoalteromonadaceae", "Pseudomonadaceae", "Puniceicoccaceae", "Rhodobacteraceae", "Rhodospirillaceae", "Simkaniaceae", "Sphingomonadaceae", "Spirochaetaceae", "Streptococcaceae", "Vibrionaceae", "Xanthomonadaceae", "Xenococcaceae")
+
+head(micro.df)
+str(micro.df)
+
+#####
+
+#ashapem<-read.csv("nut_boundary2.csv", header = T)
+#ashapem<-as.matrix(ashapem[,2:3])
+
+
+micro.df.latlong <- merge(micro.df,ashapem, by="Site_Number")
+head(micro.df.latlong)
+
+
+#borderpolygon <- list(data.frame(ashapem[,1], ashapem[,2]))
+#head(micro.df)
+
+
+#####
+#krig1 <- kriging(micro.df$longUTM, micro.df$latUTM, micro.df$Alcanivoracaceae + micro.df$Bacteriovoracaceae, pixels=1000,polygons=borderpolygon) ###MOD
+#str(krig1)
+#krig2 <- krig1$map
+
+                        
+                        
+                        
+
+
+
+
+
+
+
+
+
+
+``````
+
+
+
+MAPS: 
+
+quick_interpolations.txt
+Who has access
+T
+System properties
+Type
+Text
+Size
+5 KB
+Storage used
+5 KBOwned by University of California, Santa Barbara
+Location
+Analysis
+Owner
+Thomas Adam
+Modified
+Jan 17, 2022 by Thomas Adam
+Opened
+2:56 PM by me
+Created
+Jan 20, 2022
+No description
+Viewers can download
+#####Initialize
+######Note, you don't need all of these packages but I copied this code from a longer analysis and I'm not sure which subset of these you need.
+
+library(ggplot2)
+library(maptools)
+library(reshape2)
+library(PBSmapping)
+library(sp)
+library(mapproj)
+library(plyr)
+library(data.table)
+library(rgeos)
+library(ggmap)
+library(rgdal)
+library(spatstat)
+library(vegan)
+library(GGally)
+library(raster)
+library(rgdal)
+library(dplyr)
+library(sf)
+library(kriging)
+library(ggnewscale)
+library(ggspatial)
+library(marmap)
+
+#####My working directory when I made these....
+
+setwd("C:/Users/tadam/Documents/Research projects/MCR_LTER/Data_files/Lagoon_heterogeneity/Water_column_nutrients/2021_May/Analysis")
+
+
+nuts<-read.csv("water_column_nutrients_May2021.csv", header = T) 
+
+#First just look at some basic descriptive stats
+
+ggpairs(nuts, 8:11)
+
+
+#ggsave(filename = "nutrient_cor.pdf",width=6,height=4)  
+
+
+################Format Moorea DEM so we can use it as a map###################################
+
+dem <- raster('dtm_merged_5m.tif')
+dem_land <- raster("dem_land.tif")
+mo.shp <- readOGR('Moorea_outline/Isle_outline_gcs84.shp')
+mo.shp.dem <- spTransform(mo.shp,projection(dem_land)) # transform to same projection as dem
+mo.sf <- st_as_sf(mo.shp.dem)
+
+
+# land --------------------------------------------------------------------
+# hill shade
+slp <- terrain(dem_land,opt='slope')
+asp <- terrain(dem_land,opt='aspect')
+hill <- hillShade(slp,asp)# compute hillshade 
+plot(hill)
+
+
+# transform rasters for ggplot
+dem.p  <-  rasterToPoints(dem_land)
+dem.df <-  data.frame(dem.p)
+colnames(dem.df) = c("x", "y", "alt")
+
+hill.p  <-  rasterToPoints(hill)
+hill.df <-  data.frame(hill.p)
+colnames(hill.df) = c("x", "y", "alt")
+
+
+#########Get coordinates in UTM
+
+spdf<-SpatialPointsDataFrame(coords = nuts[c('Lon','Lat')], data = nuts, proj4string = CRS("+proj=longlat +datum=WGS84 +ellps=WGS84 +towgs84=0,0,0"))
+nutsUTM<-spTransform(spdf, projection(mo.shp.dem))
+nutsUTM.df <- as.data.frame(nutsUTM)
+
+###################################
+
+
+ggplot() +
+  theme_bw() +   
+  geom_raster(data=hill.df, aes(x=x,y=y,fill = alt),show.legend=FALSE) + scale_fill_gradientn(colors = grey(50:100/100)) +
+  new_scale("fill") +
+  geom_sf(data = mo.sf, fill=NA, lwd = 0.2) +
+  geom_point(data= nutsUTM.df, aes(Lon.1, Lat.1), size = 2)+
+  coord_sf() +
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank()) +  
+  	theme(panel.grid.major = element_line(color = 'white', linetype = "dashed",size = 0.5),
+        plot.background=element_rect(fill='white'))
+
+#ggsave(filename = "Sites.pdf",width=13.3,height=9.8)  
+
+
+###################################################Getting ready for krigging
+
+
+df<-nutsUTM.df[,c(2,8:11,14,15)]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###################### Now we will do the kriging to get the map and semivariogram ################################################################33
+ 
+### create semivariogram
+
+area2.df<-df
+
+colnames(area2.df) <- c("site", "Phosphate", "Silicate", "Nitrate_plus_Nitrite", "Amonia", "longUTM", "latUTM")
+head(area2.df)
+str(area2.df)
+
+
+ashapem<-read.csv("nut_boundary2.csv", header = T)
+ashapem<-as.matrix(ashapem[,2:3])
+
+
+##### the borderpolygon object is a list that will be part of the kriging function
+
+borderpolygon <- list(data.frame(ashapem[,1], ashapem[,2]))
+
+
+
+head(area2.df)
+
+###### for each variable just change the z value
+krig1 <- kriging(area2.df$longUTM, area2.df$latUTM, area2.df$Amonia + area2.df$Nitrate_plus_Nitrite, pixels=1000,polygons=borderpolygon) ###pixels controls how fine or course you want the prediction data frame to be
+str(krig1)
+
+krig2 <- krig1$map
+
+
+###### Now we can make the map ####################
+ 
+ 
+library(colorRamps)
+
+###Can try out some different color ramps if we want.  I actually think rainbow is quite good.
+
+ggplot() +
+  theme_bw() +
+	geom_point(data=krig2, aes(x=x, y=y, colour=pred), size=4) + 
+	scale_colour_gradientn(name="",colours = rev(rainbow(10))) +   
+  geom_raster(data=hill.df, aes(x=x,y=y,fill = alt),show.legend=FALSE) + scale_fill_gradientn(colors = grey(50:100/100)) +
+  new_scale("fill") +
+  geom_sf(data = mo.sf, fill=NA, lwd = 0.2) +
+  geom_point(data= area2.df, aes(longUTM, latUTM), size = 1)+
+  coord_sf() +
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank()) +  
+  	theme(panel.grid.major = element_line(color = 'white', linetype = "dashed",size = 0.5),
+        plot.background=element_rect(fill='white'))
+
+
+#ggsave(filename = "Amonia_plus_nitrate_plus_nitriteterrain.pdf",width=13.3,height=9.8)  
+
+
+
+
+
+
+######
+######################
+library(colorRamps)
+
+
+ggplot() +
+  theme_bw() +
+	geom_point(data=krig2, aes(x=x, y=y, colour=pred), size=4) + 
+	scale_colour_gradientn(name="",colours = rev(rainbow(10))) +   
+  geom_raster(data=hill.df, aes(x=x,y=y,fill = alt),show.legend=FALSE) + scale_fill_gradientn(colors = grey(50:100/100)) +
+  new_scale("fill") +
+  geom_sf(data = mo.sf, fill=NA, lwd = 0.2) +
+  geom_point(data= micro.df, aes(longUTM, latUTM), size = 1)+
+  coord_sf() +
+  theme(axis.line=element_blank(),
+        axis.text.x=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks=element_blank(),
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank()) +  
+  	theme(panel.grid.major = element_line(color = 'white', linetype = "dashed",size = 0.5),
+        plot.background=element_rect(fill='white'))
+
+
+#ggsave(filename = "Amonia_plus_nitrate_plus_nitriteterrain.pdf",width=13.3,height=9.8)  
+
+
+
+
+
+
+
+
