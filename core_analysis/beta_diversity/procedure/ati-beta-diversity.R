@@ -18,7 +18,7 @@ physeq <- readRDS("../../pre_processing/output/ati-physeq.RDS")
 data <- as(sample_data(physeq), "data.frame")
 
 #Using the rarefied data for alpha diversity
-physeq_rare <- readRDS("../../pre_processing/output/ati-physeq-1000.RDS") 
+physeq_rare <- readRDS("../../pre_processing/output/ati-physeq-11146.RDS") 
 data.rare <- as(sample_data(physeq_rare), "data.frame")
 data.rare$sample.id <- rownames(data.rare)
 
