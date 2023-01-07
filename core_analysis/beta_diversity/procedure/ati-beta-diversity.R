@@ -205,6 +205,7 @@ bc <- phyloseq::distance(physeq_rare, method = "bray")
 
 bray_curtis_pcoa <- ecodist::pco(bc)
 
+print(bray_curtis_pcoa)
 # All components could be found here: 
 # bray_curtis_pcoa$vectors
 # But we only need the first two to demonstrate what we can do:
@@ -223,6 +224,23 @@ bray_curtis_plot <- ggplot(data = bray_curtis_pcoa_df, aes(x=pcoa1, y=pcoa2)) +
 ggsave("../output/plots/PCoA_bray.pdf", plot = last_plot())
 
 
+##Can we split by reef location
+bray_curtis_pcoa_data_df <- cbind(bray_curtis_pcoa_df,
+                            data.rare)
+
+write.csv(bray_curtis_pcoa_data_df, "../output/bray_curtis_PCoA_Axes_data.csv")
+# Creates a plot
+bray_curtis_N_plot <- ggplot(data = bray_curtis_pcoa_data_df, aes(x=pcoa1, y=pcoa2, color = turb_C_to_N_ratio)) + 
+  geom_point(size = 3) +
+  labs(x = "PC1",
+       y = "PC2",
+       title = "PCoA of Microbial Communities vs  C:N") +
+  theme_bw()
+
+bray_curtis_percN_plot
+ggsave("../output/PCoA_percN.pdf", plot = last_plot())
+
+
 ###Weighted UniFrac
 
 wuf <- phyloseq::distance(physeq_rare, method = "wunifrac")
@@ -230,7 +248,7 @@ wuf <- phyloseq::distance(physeq_rare, method = "wunifrac")
 #adonis(bc ~ Turb_Percent_N, data = percN.data, method = "bray")
 
 wunifrac_pcoa <- ecodist::pco(wuf)
-
+print(wunifrac_pcoa)
 # All components could be found here: 
 # bray_curtis_pcoa$vectors
 # But we only need the first two to demonstrate what we can do:
@@ -249,8 +267,35 @@ wunifrac_plot <- ggplot(data = wunifrac_pcoa_df, aes(x=pcoa1, y=pcoa2)) +
 ggsave("../output/plots/PCoA_WeightedUniFrac.pdf", plot = last_plot())
 
 
+wunifrac_pcoa_data_df <- cbind(wunifrac_pcoa_df,
+                                  data.rare)
+
+# Creates a plot
+wunifrac_N_plot <- ggplot(data = wunifrac_pcoa_data_df, aes(x=pcoa1, y=pcoa2, color = turb_C_to_N_ratio)) + 
+  geom_point(size = 3) +
+  labs(x = "PCo1",
+       y = "PCo2",
+       title = "W UniFrac PCoA of Microbial Communities vs  C:N") +
+  theme_bw()
+
+bray_curtis_percN_plot
+ggsave("../output/plots/wunifrac_PCoA_percN.pdf", plot = last_plot())
 
 
+##How about nmds
+ord.bc <- ordinate(physeq.r.coral, "NMDS", "bray", trymax = 500) #Run 20 stress 0.07221613
+stressplot(ord.bc)
+scores.bc <- as.data.frame(scores(ord))
+scores.bc <- cbind(scores.bc, data.rare)
+
+
+plot.br <- ggplot(scores, aes(x = NMDS1, y = NMDS2)) + 
+  geom_point(aes(colour = motu, shape = island.side), size = 4) +
+  #geom_text(label = scores.outrm$sample.name) +
+  stat_ellipse(aes(x = NMDS1, y = NMDS2, colour = motu), linetype = 2) +
+  theme_bw()
+
+plot.br+ facet_grid(cols = vars(motu))
 
 
 
