@@ -166,3 +166,136 @@ p16 <- ggplot(erich, aes(x = water_nitrite_plus_nitrate, y = evenness)) +
 plot_grid(p13, p14, p15, p16) #from library "cowplot"
 
 ggsave("../output/plots/microbialdiv_nitrite_nitrate.pdf", plot = last_plot())
+
+
+
+###Regressions###
+
+#First let's bring in the PCoA data (from beta diversity directory) and include it into erich
+erich <- readRDS("../output/ati-erich.RDS")
+pcoa_df <- read.csv("../../beta_diversity/output/bray_curtis_PCoA_Axes_data.csv")
+erich$pcoa1 <- pcoa_df$pcoa1  
+
+##1. Turbinaria Nutrients
+
+# C to N ratio
+p.cton.obs <- ggplot(erich, aes(x = turb_C_to_N_ratio, y = Observed)) +
+  geom_point(size=2) +
+  geom_smooth(method=lm) +
+  xlab("Turbinaria C:N") +
+  ylab("Microbial Species Richness") +
+  theme_bw()
+lm.cton <- lm(Observed ~ turb_C_to_N_ratio, erich)
+summary(lm.cton)
+#Multiple R-squared:  0.01361,	Adjusted R-squared:  0.008338 
+#F-statistic: 2.581 on 1 and 187 DF,  p-value: 0.1099
+plot(lm.cton)
+
+p.cton.even <- ggplot(erich, aes(x = turb_C_to_N_ratio, y = evenness)) +
+  geom_point(size=2) +
+  geom_smooth(method=lm) +
+  xlab("Turbinaria C:N") +
+  ylab("Microbial Evenness") +
+  theme_bw()
+lm.cton.even <- lm(evenness ~ turb_C_to_N_ratio, erich)
+summary(lm.cton.even)
+#Multiple R-squared:  0.01588,	Adjusted R-squared:  0.01061 
+#F-statistic: 3.017 on 1 and 187 DF,  p-value: 0.08405
+plot(lm.cton.even)
+
+p.cton.pcoa <- ggplot(erich, aes(x = turb_C_to_N_ratio, y = pcoa1)) +
+  geom_point(size=2) +
+  geom_smooth(method=lm) +
+  xlab("Turbinaria C:N") +
+  ylab("Microbial Bray-Curtis PCoA1 Axis") +
+  theme_bw()
+lm.cton.pcoa <- lm(pcoa1 ~ turb_C_to_N_ratio, erich)
+summary(lm.cton.pcoa)
+#Multiple R-squared:  0.07527,	Adjusted R-squared:  0.07033 
+#F-statistic: 15.22 on 1 and 187 DF,  p-value: 0.0001333
+plot(lm.cton.pcoa)
+  
+
+p.cton.fpd <- ggplot(erich, aes(x = turb_C_to_N_ratio, y = FaithPD)) +
+  geom_point(size=2) +
+  geom_smooth(method=lm) +
+  xlab("Turbinaria C:N") +
+  ylab("Microbial Phylogenetic Diversity") +
+  theme_bw()
+lm.cton.fpd <- lm(FaithPD ~ turb_C_to_N_ratio, erich)
+summary(lm.cton.fpd)
+#Multiple R-squared:  0.0192,	Adjusted R-squared:  0.01395 
+#F-statistic:  3.66 on 1 and 187 DF,  p-value: 0.05725
+plot(lm.cton.fpd)
+
+plot_grid(p.cton.obs, p.cton.even, p.cton.fpd, p.cton.pcoa)
+ggsave("../output/plots/C_to_N_microbial_corr.pdf", plot = last_plot())
+
+##2. Water Nutrients
+
+#Nitrite + Nitrate
+p.nn.obs <- ggplot(erich, aes(x = water_nitrite_plus_nitrate, y = Observed)) +
+  geom_point(size=2) +
+  geom_smooth(method=lm) +
+  xlab("Water Nitrite + Nitrate") +
+  ylab("Microbial Species Richness") +
+  theme_bw()
+lm.nn.obs <- lm(Observed ~ water_nitrite_plus_nitrate, erich)
+summary(lm.nn.obs)
+#Multiple R-squared:  0.1674,	Adjusted R-squared:  0.163 
+#F-statistic:    38 on 1 and 189 DF,  p-value: 4.185e-09
+
+
+p.nn.even <- ggplot(erich, aes(x = water_nitrite_plus_nitrate, y = evenness)) +
+  geom_point(size=2) +
+  geom_smooth(method=lm) +
+  xlab("Water Nitrite + Nitrate") +
+  ylab("Microbial Evenness") +
+  theme_bw()
+lm.nn.even <- lm(evenness ~ water_nitrite_plus_nitrate, erich)
+summary(lm.nn.even)
+#Multiple R-squared:  0.01681,	Adjusted R-squared:  0.01161 
+#F-statistic: 3.231 on 1 and 189 DF,  p-value: 0.07384
+
+
+p.nn.pcoa <- ggplot(erich, aes(x = water_nitrite_plus_nitrate, y = pcoa1)) +
+  geom_point(size=2) +
+  geom_smooth(method=lm) +
+  xlab("Water Nitrite + Nitrate") +
+  ylab("Microbial Bray-Curtis PCoA1 Axis") +
+  theme_bw()
+lm.nn.pcoa <- lm(pcoa1 ~ water_nitrite_plus_nitrate, erich)
+summary(lm.nn.pcoa)
+#Multiple R-squared:  0.2525,	Adjusted R-squared:  0.2486 
+#F-statistic: 63.85 on 1 and 189 DF,  p-value: 1.292e-13
+plot(lm.nn.pcoa)
+
+p.nn.fpd <- ggplot(erich, aes(x = water_nitrite_plus_nitrate, y = FaithPD)) +
+  geom_point(size=2) +
+  geom_smooth(method=lm) +
+  xlab("Water Nitrite + Nitrate") +
+  ylab("Microbial Phylogenetic Diversity") +
+  theme_bw()
+lm.nn.fpd <- lm(FaithPD ~ water_nitrite_plus_nitrate, erich)
+summary(lm.nn.fpd)
+#Multiple R-squared:  0.2105,	Adjusted R-squared:  0.2063 
+#F-statistic: 50.38 on 1 and 189 DF,  p-value: 2.48e-11
+plot(lm.nn.pcoa)
+
+plot_grid(p.nn.obs, p.nn.even, p.nn.fpd, p.nn.pcoa)
+ggsave("../output/plots/nitrite_nitrate_microbial_corr.pdf", plot = last_plot())
+
+
+
+##Silicate
+p.sil.pcoa <- ggplot(erich, aes(x = log(water_silicate), y = pcoa1)) +
+  geom_point(size=2) +
+  geom_smooth(method=lm) +
+  xlab("log(Water Silicate)") +
+  ylab("Microbial Bray-Curtis PCoA1 Axis") +
+  theme_bw()
+lm.sil.pcoa <- lm(pcoa1 ~ log(water_silicate), erich)
+summary(lm.sil.pcoa)
+#Multiple R-squared:  0.3244,	Adjusted R-squared:  0.3208 
+#F-statistic: 90.74 on 1 and 189 DF,  p-value: < 2.2e-16
+plot(lm.sil.pcoa)
