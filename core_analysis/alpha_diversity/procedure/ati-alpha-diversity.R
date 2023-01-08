@@ -290,6 +290,7 @@ ggsave("../output/plots/nitrite_nitrate_microbial_corr.pdf", plot = last_plot())
 ##Silicate
 p.sil.pcoa <- ggplot(erich, aes(x = log(water_silicate), y = pcoa1)) +
   geom_point(size=2) +
+  #geom_text(label = erich$sample_id, nudge_x = 0.005, nudge_y = 0.005) +
   geom_smooth(method=lm) +
   xlab("log(Water Silicate)") +
   ylab("Microbial Bray-Curtis PCoA1 Axis") +
@@ -299,3 +300,96 @@ summary(lm.sil.pcoa)
 #Multiple R-squared:  0.3244,	Adjusted R-squared:  0.3208 
 #F-statistic: 90.74 on 1 and 189 DF,  p-value: < 2.2e-16
 plot(lm.sil.pcoa)
+
+
+
+###Can we add fDOM marine Humic-like things to our regressions?
+#erich <- readRDS("../output/ati-erich.RDS")
+#pcoa_df <- read.csv("../../beta_diversity/output/bray_curtis_PCoA_Axes_data.csv")
+#erich$pcoa1 <- pcoa_df$pcoa1  
+fdom_df <- read.csv("../../../metadata/new_metadata/input/fDOM_may2021.proc.csv")
+fdom_df$sample_id <- fdom_df$SampleName
+erich.fdom <- merge(erich, fdom_df, by = "sample_id", all = TRUE)
+
+p.humic.pcoa <- ggplot(erich.fdom, aes(x = MarineHumic.like, y = pcoa1)) +
+  geom_point(size=2) +
+  #geom_text(label = erich.fdom$sample_id, nudge_x = 0.001, nudge_y = 0.001) +
+  geom_smooth(method=lm) +
+  xlab("Marine Humic Like") +
+  ylab("Microbial Bray-Curtis PCoA1 Axis") +
+  theme_bw()
+lm.humic.pcoa <- lm(pcoa1 ~ MarineHumic.like, erich.fdom)
+summary(lm.humic.pcoa)
+#Multiple R-squared:  0.1518,	Adjusted R-squared:  0.1473 
+#F-statistic: 33.66 on 1 and 188 DF,  p-value: 2.743e-08
+plot(lm.humic.pcoa)
+
+plot_grid(p.humic.pcoa, p.sil.pcoa)
+ggsave("../output/plots/silicante_humic_microbial_corr_label.pdf", plot = last_plot())
+ggsave("../output/plots/silicate_humic_microbial_corr.pdf", plot = last_plot())
+
+
+##other fDOM measures Linda said were interesting = HIX (humification index) & BIX (biological index), M.C (Peak C to Peak M ratio)
+p.hix.pcoa <- ggplot(erich.fdom, aes(x = HIX, y = pcoa1)) +
+  geom_point(size=2) +
+  #geom_text(label = erich.fdom$sample_id, nudge_x = 0.001, nudge_y = 0.001) +
+  geom_smooth(method=lm) +
+  xlab("Humification Index (HIX)") +
+  ylab("Microbial Bray-Curtis PCoA1 Axis") +
+  theme_bw()
+lm.hix.pcoa <- lm(pcoa1 ~ HIX, erich.fdom)
+summary(lm.hix.pcoa)
+#Multiple R-squared:  0.3335,	Adjusted R-squared:  0.3299 
+#F-statistic: 94.06 on 1 and 188 DF,  p-value: < 2.2e-16
+plot(lm.hix.pcoa)
+
+p.bix.pcoa <- ggplot(erich.fdom, aes(x = BIX, y = pcoa1)) +
+  geom_point(size=2) +
+  #geom_text(label = erich.fdom$sample_id, nudge_x = 0.001, nudge_y = 0.001) +
+  geom_smooth(method=lm) +
+  xlab("Biological Index (BIX)") +
+  ylab("Microbial Bray-Curtis PCoA1 Axis") +
+  theme_bw()
+lm.bix.pcoa <- lm(pcoa1 ~ BIX, erich.fdom)
+summary(lm.bix.pcoa)
+#Multiple R-squared:  0.008266,	Adjusted R-squared:  0.002991 
+#F-statistic: 1.567 on 1 and 188 DF,  p-value: 0.2122
+plot(lm.bix.pcoa)
+
+p.mc.pcoa <- ggplot(erich.fdom, aes(x = M.C, y = pcoa1)) +
+  geom_point(size=2) +
+  #geom_text(label = erich.fdom$sample_id, nudge_x = 0.001, nudge_y = 0.001) +
+  geom_smooth(method=lm) +
+  xlab("Ratio of M to C (MC)") +
+  ylab("Microbial Bray-Curtis PCoA1 Axis") +
+  theme_bw()
+lm.mc.pcoa <- lm(pcoa1 ~ M.C, erich.fdom)
+summary(lm.mc.pcoa)
+#Multiple R-squared:  0.2643,	Adjusted R-squared:  0.2604 
+#F-statistic: 67.53 on 1 and 188 DF,  p-value: 3.294e-14
+plot(lm.mc.pcoa)
+
+plot_grid(p.humic.pcoa, p.hix.pcoa, p.bix.pcoa, p.mc.pcoa)
+ggsave("../output/plots/fdom_microbial_corr.pdf", plot = last_plot())
+
+
+
+##Add site data?
+erich.fdom
+site.md <- read.csv("../../../metadata/new_metadata/input/ati_site_metadata.csv")
+erich.full <- merge(erich.fdom, site.md, by = "sample_id", all = TRUE)
+
+##Trial colouring dots by reef habitat type
+
+ggplot(erich.full, aes(x = water_nitrite_plus_nitrate, y = pcoa1)) +
+  geom_point(size=3, aes(colour = erich.full$Habitat)) +
+  #geom_text(label = erich.fdom$sample_id, nudge_x = 0.001, nudge_y = 0.001) +
+  geom_smooth(method=lm) +
+  xlab("Water Nitrite + Nitrate") +
+  ylab("Microbial Bray-Curtis PCoA1 Axis") +
+  theme_bw()
+ggsave("../output/plots/nn_microbial_corr_byhabitat.pdf", plot = last_plot())
+
+write.csv(erich.full, "../output/ati-metadata-with-alphadiv-fDOM-site.csv" )
+erich.full <- read.csv("../output/ati-metadata-with-alphadiv-fDOM-site.csv")
+
