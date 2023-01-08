@@ -330,13 +330,15 @@ ggsave("../output/plots/silicate_humic_microbial_corr.pdf", plot = last_plot())
 
 
 ##other fDOM measures Linda said were interesting = HIX (humification index) & BIX (biological index), M.C (Peak C to Peak M ratio)
-p.hix.pcoa <- ggplot(erich.fdom, aes(x = HIX, y = pcoa1)) +
-  geom_point(size=2) +
+p.hix.pcoa <- ggplot(erich.full, aes(x = HIX, y = pcoa1)) +
+  geom_point(size=3, aes(colour  = Island_shore)) +
   #geom_text(label = erich.fdom$sample_id, nudge_x = 0.001, nudge_y = 0.001) +
   geom_smooth(method=lm) +
   xlab("Humification Index (HIX)") +
   ylab("Microbial Bray-Curtis PCoA1 Axis") +
-  theme_bw()
+  theme_bw() +
+  facet_wrap(erich.full$Habitat)
+
 lm.hix.pcoa <- lm(pcoa1 ~ HIX, erich.fdom)
 summary(lm.hix.pcoa)
 #Multiple R-squared:  0.3335,	Adjusted R-squared:  0.3299 
@@ -393,3 +395,118 @@ ggsave("../output/plots/nn_microbial_corr_byhabitat.pdf", plot = last_plot())
 write.csv(erich.full, "../output/ati-metadata-with-alphadiv-fDOM-site.csv" )
 erich.full <- read.csv("../output/ati-metadata-with-alphadiv-fDOM-site.csv")
 
+
+ggplot(erich.full, aes(x = turb_percent_N, y = MarineHumic.like)) +
+  geom_point(size=3) +
+  #geom_text(label = erich.fdom$sample_id, nudge_x = 0.001, nudge_y = 0.001) +
+  geom_smooth(method=lm) +
+  xlab("Percent N") +
+  ylab("Marine Humic Like") +
+  theme_bw()
+
+summary(lm(MarineHumic.like ~ turb_percent_N, erich.full))
+
+##Add Nury's regimes to this data file
+nury.regime <- read.csv("../../../metadata/new_metadata/input/regime_meta.csv")
+nury.regime$sample_id <- nury.regime$Site
+erich.full.regime <- merge(erich.full, nury.regime, by = "sample_id", all = TRUE)
+erich.full.regime$Regime <- as.factor(erich.full.regime$Regime)
+
+
+ggplot(erich.full.regime, aes(x = water_nitrite_plus_nitrate, y = pcoa1)) +
+  geom_point(size=3, aes(colour = erich.full.regime$Regime)) +
+  #geom_text(label = erich.fdom$sample_id, nudge_x = 0.001, nudge_y = 0.001) +
+  geom_smooth(method=lm) +
+  xlab("Water Nitrite + Nitrate") +
+  ylab("Microbial Bray-Curtis PCoA1 Axis") +
+  theme_bw()
+
+
+ggplot(erich.full.regime, aes(x = Regime, y = pcoa1))+
+  geom_boxplot() +
+  xlab("Regime Shift") +
+  ylab("Microbial Bray-Curtis PCoA1 Axis") +
+  theme_bw()
+
+
+
+
+
+
+####Mapping
+
+library(sf)
+library(sp)
+library(OpenStreetMap)
+library(viridisLite)
+
+#6 fdom parameters, mess around with their correlations with 3 microbial parameters
+#relationships between fdom parameters - check for orthogonal (what has meaning in fdom bc of covariation)
+#pca of fdom (normalize e.g., transform best or z score the fdom parameters before pca)
+
+
+
+# melted data frame
+# fdom indices are collapsed into two columns: index_name and index_value
+
+
+
+# filter NAs
+map_long_dat = l_dat[!is.na(map_long_dat$Latitude)]
+
+# make spacial points data frame
+map_sp = SpatialPointsDataFrame(data = map_long_dat,
+                                coords = list(map_long_dat$Latitude,
+                                              map_long_dat$Longitude))
+
+
+# Check geographic range of sampling points
+limits = c(
+  min(map_long_dat$Longitude),
+  min(map_long_dat$Latitude), 
+  max(map_long_dat$Longitude),
+  max(map_long_dat$Latitude) 
+)
+
+# define a bounding box with a small cushion around the minimum and maximum
+bbox = list(
+  xmin = limits[1] - 0.03,
+  ymin = limits[2] - 0.04,
+  xmax = limits[3] + 0.03,
+  ymax = limits[4] + 0.04
+)
+
+# get basemap
+sa_map <- openmap(c(bbox$ymax, bbox$xmin),
+                  c(bbox$ymin, bbox$xmax),
+                  type = "stamen-terrain",
+                  mergeTiles = TRUE)
+
+sa_map2 <- openproj(sa_map)
+
+
+mo_map = function(an_index, outlier_n){
+  
+  # remove highest and lowest n samples
+  ind_map_dat = map_long_dat[map_long_dat$index_name == an_index &
+                               !(is.infinite(map_long_dat$log_index_value))]
+  ind_map_dat[order(ind_map_dat$ log_index_value)]
+  ind_map_dat = head(ind_map_dat, n = -(outlier_n))
+  ind_map_dat = tail(ind_map_dat, n = -(outlier_n))
+  
+  # actual map code
+  sa_map2_plt = OpenStreetMap::autoplot.OpenStreetMap(sa_map2)+
+    geom_point(data = ind_map_dat,
+               aes(x = Longitude,
+                   y = Latitude,
+                   color = log_index_value))+
+    labs(title = paste("Log",an_index),
+         x = "Lon",
+         y = "Lat")+
+    scale_color_gradient(low = "green", high = "red")+
+    guides(fill=guide_legend(title=NULL))
+  
+  print(sa_map2_plt)
+  
+ggsave(filename = paste0("plots/exploration/ATI/map_",an_index,".png"), plot = sa_map2_plt))
+  

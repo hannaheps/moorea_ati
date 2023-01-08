@@ -197,13 +197,48 @@ ggsave("../output/PCoA_percN.pdf", plot = last_plot())
 
 ##JANUARY 2023
 ##Running the PCoA
-
+##                    
 ##First up is Bray Curtis
-bc <- phyloseq::distance(physeq_rare, method = "bray")
+bc <- phyloseq::distance(physeq_r_ra, method = "bray")
+bc.matrix <- as.matrix(bc)
+write.csv(bc.matrix, "../output/bray_curtis_distance_matrix.csv")
 #If we want to look at relationships
 #adonis(bc ~ Turb_Percent_N, data = percN.data, method = "bray")
 
 bray_curtis_pcoa <- ecodist::pco(bc)
+?ecodist::pco
+
+#vegan
+
+ord <- cmdscale(bc, k=2, eig = TRUE)
+print(ord)
+round(ord$eig*100/sum(ord$eig), 1)
+
+eig <- ord$eig 
+
+##isoMDS
+ord <- MASS::isoMDS(bc.matrix, y = cmdscale(bc.matrix, 2), k =2, maxit = 50, trace = TRUE, tol = 1e-3, p = 2)
+
+print(ord)
+
+library(ade4)
+ord.dudi <- dudi.pco(bc, scannf = FALSE, nf = 2, full = FALSE)
+summary(ord.dudi)
+scatter(ord.dudi)
+
+
+bray_curtis_pcoa_df <- data.frame(pcoa1 = ord$points[,1], 
+                                  pcoa2 = ord$points[,2])
+print(ord$eig)
+bray_curtis_pcoa_df <- cbind(bray_curtis_pcoa_df, data.r.ra)
+
+ggplot(data = bray_curtis_pcoa_df, aes(x=pcoa1, y=pcoa2)) +
+  geom_point() +
+  labs(x = "PCoA1",
+       y = "PCoA2", 
+       title = "Bray-Curtis PCoA") +
+  theme(title = element_text(size = 10))
+
 
 print(bray_curtis_pcoa)
 # All components could be found here: 
@@ -215,8 +250,8 @@ bray_curtis_pcoa_df <- data.frame(pcoa1 = bray_curtis_pcoa$vectors[,1],
 
 bray_curtis_plot <- ggplot(data = bray_curtis_pcoa_df, aes(x=pcoa1, y=pcoa2)) +
   geom_point() +
-  labs(x = "PCo1",
-       y = "PCo2", 
+  labs(x = "PCoA1",
+       y = "PCoA2", 
        title = "Bray-Curtis PCoA") +
   theme(title = element_text(size = 10)) # makes titles smaller
 
@@ -226,7 +261,7 @@ ggsave("../output/plots/PCoA_bray.pdf", plot = last_plot())
 
 ##Can we split by reef location
 bray_curtis_pcoa_data_df <- cbind(bray_curtis_pcoa_df,
-                            data.rare)
+                            data.r.ra)
 
 write.csv(bray_curtis_pcoa_data_df, "../output/bray_curtis_PCoA_Axes_data.csv")
 # Creates a plot
@@ -236,6 +271,10 @@ bray_curtis_N_plot <- ggplot(data = bray_curtis_pcoa_data_df, aes(x=pcoa1, y=pco
        y = "PC2",
        title = "PCoA of Microbial Communities vs  C:N") +
   theme_bw()
+
+install.packages("plotly")
+library(plotly)
+plot_ly(x=pcoa1, y=pcoa2, z=pcoa3, type="scatter3d", mode="markers", data = bray_curtis_pcoa_df)
 
 bray_curtis_percN_plot
 ggsave("../output/PCoA_percN.pdf", plot = last_plot())
