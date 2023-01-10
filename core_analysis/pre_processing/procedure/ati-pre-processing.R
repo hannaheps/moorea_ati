@@ -11,16 +11,18 @@ library(gridExtra)
 library(vegan)
 library(decontam)
 
-#Set working directory
+#Make sure you set working directory into the "pre-processing/procedure folder
 setwd("~/Documents/OSUDocs/Projects/French_Polynesia/Around_the_island/moorea_ati/core_analysis/pre_processing/procedure/")
 
 #use qiime2R to upload data into a phyloseq object
+#metadata comes from the output of the combine_meta.R script where sequencing metadata is combined with the full ati dataset
+
 
 #For final use the following code
 physeq <- qza_to_phyloseq("../../../bioinformatics/new_analysis/output/ati-filtered-noeuk-table.qza", #feature table
                           "../../../bioinformatics/new_analysis/output/ati-rooted-tree.qza", #tree
                           "../../../bioinformatics/new_analysis/output/ati-tax.qza", #taxonomy reference
-                          "../../../metadata/new_metadata/output/metadata_with_turb.txt") #mapping file
+                          "../../../metadata/new_metadata/output/metadata_ati_full_2021.txt") #mapping file
 
 sample.data <- as(sample_data(physeq), "data.frame")
 View(sample.data)
@@ -30,6 +32,10 @@ tax_table(physeq)
 
 physeq <- subset_taxa(physeq,  Kingdom != "Unassigned")
 
+##Always a good idea to check the mitochondrial reads jic
+mito <- subset_taxa(physeq, Family == "Mitochondria")
+mito_taxa <- rownames(otu_table(mito))
+print(mito_taxa)
 ##ON 6 January 2023 these data use green genes so the mitochondria issue is no longer valid
 ##Check the Mitochondrial reads
 #mito <- subset_taxa(physeq, Family == "Mitochondria")
@@ -70,7 +76,7 @@ ggplot(data = sample.data, aes(x=Index, y=LibrarySize, color = sample_type)) +
   geom_point()
 
 #Next check for contaminants using prevalence and threshold 0.5 (more conservative)
-sample_data(physeq.nm)$is.neg <- sample_data(physeq.nm)$sample_type == "blank"
+sample_data(physeq.nm)$is.neg <- sample_data(physeq.nm)$sample_type == "control"
 contamdf.prev <- isContaminant(physeq.nm, method = "prevalence", neg = "is.neg", threshold = 0.5)
 table(contamdf.prev$contaminant)
 head(which(contamdf.prev$contaminant))
