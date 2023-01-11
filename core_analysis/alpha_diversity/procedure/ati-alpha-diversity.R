@@ -13,7 +13,7 @@ setwd("~/Documents/OSUDocs/Projects/French_Polynesia/Around_the_island/moorea_at
 
 #Read in the phyloseq object (output from pre-processing R script)
 #Using the rarefied data for alpha diversity
-physeq_rare <- readRDS("../../pre_processing/output/ati-physeq-11146.RDS") 
+physeq_rare <- readRDS("../../pre_processing/output/ati-2021-physeq-rare.RDS") 
 data.rare <- as(sample_data(physeq_rare), "data.frame")
 
 ###ALPHA DIVERSITY###
@@ -27,40 +27,43 @@ erich$evenness <- erich$Shannon/log(erich$Observed)
 #Fill out the rest of the data from the phyloseq object
 erich <- cbind(erich, data.rare)
 rownames(erich) <- rownames(data.rare)
+View(erich)
+
+
 
 #Output the RDS file and the metadata as a CSV with alpha diversity metrics 
 saveRDS(erich, file = "../output/ati-erich.RDS", compress = TRUE)
 #erich <- readRDS("../output/ati-erich.RDS")
-write.csv(erich, "../output/ati-metadata-with-alphadiv.csv" )
-#erich <- readRDS("../output/ati-erich.RDS")
+write.csv(erich, "../output/ati-2021-metadata-with-alphadiv.csv" )
+
 
 
 ###Can we do a super quick visual correlation of alpha diversity and nutrients??
-p1 <- ggplot(erich, aes(x = water_silicate, y = Observed)) +
+p1 <- ggplot(erich, aes(x = log(Silicate), y = Observed)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("Silicate") +
+  xlab("log10(Silicate)") +
   ylab("Microbial Species Richness") +
   theme_bw()
 
-p2 <- ggplot(erich, aes(x = water_silicate, y = Shannon)) +
+p2 <- ggplot(erich, aes(x = log(Silicate), y = Shannon)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("Silicate") +
+  xlab("Log10(Silicate)") +
   ylab("Microbial Shannon Diversity") +
   theme_bw()
 
-p3 <- ggplot(erich, aes(x = water_silicate, y = FaithPD)) +
+p3 <- ggplot(erich, aes(x = log(Silicate), y = FaithPD)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("Silicate") +
+  xlab("log10(Silicate)") +
   ylab("Microbial Phylogenetic Diversity") +
   theme_bw()
 
-p4 <- ggplot(erich, aes(x = water_silicate, y = evenness)) +
+p4 <- ggplot(erich, aes(x = log(Silicate), y = evenness)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("Silicate") +
+  xlab("log10(Silicate)") +
   ylab("Microbial Evenness") +
   theme_bw()
 
@@ -70,31 +73,31 @@ ggsave("../output/plots/microbialdiv_vs_silicate.pdf", plot = last_plot())
 
 #Trial the same as above but with the %N
 
-p5 <- ggplot(erich, aes(x = turb_percent_N, y = Observed)) +
+p5 <- ggplot(erich, aes(x = Percent_N, y = Observed)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("%N") +
+  xlab("Turbinaria %N") +
   ylab("Microbial Species Richness") +
   theme_bw()
 
-p6 <- ggplot(erich, aes(x = turb_percent_N, y = Shannon)) +
+p6 <- ggplot(erich, aes(x = Percent_N, y = Shannon)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("%N") +
+  xlab("Turbinaria %N") +
   ylab("Microbial Shannon Diversity") +
   theme_bw()
 
-p7 <- ggplot(erich, aes(x = turb_percent_N, y = FaithPD)) +
+p7 <- ggplot(erich, aes(x = Percent_N, y = FaithPD)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("%N") +
+  xlab("Turbinaria %N") +
   ylab("Microbial Phylogenetic Diversity") +
   theme_bw()
 
-p8 <- ggplot(erich, aes(x = turb_percent_N, y = evenness)) +
+p8 <- ggplot(erich, aes(x = Percent_N, y = evenness)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("%N") +
+  xlab("Turbinaria %N") +
   ylab("Microbial Evenness") +
   theme_bw()
 
@@ -103,28 +106,28 @@ plot_grid(p5, p6, p7, p8) #from library "cowplot"
 ggsave("../output/plots/microbialdiv_percN.pdf", plot = last_plot())
 
 #Observed vs. water Nutrients
-p9 <- ggplot(erich, aes(x = water_silicate, y = Observed)) +
+p9 <- ggplot(erich, aes(x = log(Silicate), y = Observed)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
-  xlab("Silicate") +
+  xlab("log10(Silicate)") +
   ylab("Microbial Species Richness") +
   theme_bw()
 
-p10 <- ggplot(erich, aes(x = water_phosphate, y = Observed)) +
+p10 <- ggplot(erich, aes(x = Phosphate, y = Observed)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
   xlab("Phosphate") +
   ylab("Microbial Species Richness") +
   theme_bw()
 
-p11 <- ggplot(erich, aes(x = water_ammonia, y = Observed)) +
+p11 <- ggplot(erich, aes(x = Ammonia, y = Observed)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
   xlab("Ammonia") +
   ylab("Microbial Species Richness") +
   theme_bw()
 
-p12 <- ggplot(erich, aes(x = water_nitrite_plus_nitrate, y = Observed)) +
+p12 <- ggplot(erich, aes(x = Nitrite_plus_Nitrate, y = Observed)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
   xlab("Nitrite plus Nitrate") +
@@ -135,28 +138,28 @@ plot_grid(p9, p10, p11, p12) #from library "cowplot"
 ggsave("../output/plots/observed_water_nutrients.pdf", plot = last_plot())
 
 ##Relationship with nitrite vs nitrate so check all microbial metrics
-p13 <- ggplot(erich, aes(x = water_nitrite_plus_nitrate, y = Observed)) +
+p13 <- ggplot(erich, aes(x = Nitrite_plus_Nitrate, y = Observed)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
   xlab("Nitrite plus Nitrate") +
   ylab("Microbial Species Richness") +
   theme_bw()
 
-p14 <- ggplot(erich, aes(x = water_nitrite_plus_nitrate, y = Shannon)) +
+p14 <- ggplot(erich, aes(x = Nitrite_plus_Nitrate, y = Shannon)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
   xlab("Nitrite plus Nitrate") +
   ylab("Microbial Shannon Diversity") +
   theme_bw()
 
-p15 <- ggplot(erich, aes(x = water_nitrite_plus_nitrate, y = FaithPD)) +
+p15 <- ggplot(erich, aes(x = Nitrite_plus_Nitrate, y = FaithPD)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
   xlab("Nitrite plus Nitrate") +
   ylab("Microbial Phylogenetic Diversity") +
   theme_bw()
 
-p16 <- ggplot(erich, aes(x = water_nitrite_plus_nitrate, y = evenness)) +
+p16 <- ggplot(erich, aes(x = Nitrite_plus_Nitrate, y = evenness)) +
   geom_point(size=2) +
   geom_smooth(method=lm) +
   xlab("Nitrite plus Nitrate") +
@@ -166,6 +169,8 @@ p16 <- ggplot(erich, aes(x = water_nitrite_plus_nitrate, y = evenness)) +
 plot_grid(p13, p14, p15, p16) #from library "cowplot"
 
 ggsave("../output/plots/microbialdiv_nitrite_nitrate.pdf", plot = last_plot())
+
+
 
 
 

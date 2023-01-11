@@ -13,20 +13,18 @@ setwd("~/Documents/OSUDocs/Projects/French_Polynesia/Around_the_island/moorea_at
 
 meta <- read.csv("../input/metadata_microbe_ati_2021.csv")
 ati <- read.csv("../input/All_dat_withFish.csv")
+
+#subset ati to 2021
+ati$Year <- as.factor(ati$Year)
+ati.2021 <- subset(ati, Year == "2021")
 #merge (= left join) the turbinaria with the metadata, specify all = TRUE to introduce NAs where there are no overlapping data
-meta.ati <- merge(meta, ati, by = "Unique_id", all = TRUE)
+meta.ati.2021 <- merge(meta, ati.2021, by = "Site", all = TRUE)
+View(meta.ati)
 
-#keep in mind that sample_id is not useful as a unique identifier. 
-#For all analyses, use Unique_id for this purpose
-
-#subset to 2021 only
-meta.ati$Year <- as.factor(meta.ati$Year)
-meta.ati.2021 <- subset(meta.ati, Year == "2021")
-
-#Duplicate Site columns means the merge will put a Site.x and Site.y
-#Rename one & remove the other:
-names(meta.ati.2021)[names(meta.ati.2021) == 'Site.x'] <- 'Site'
+#Remove duplicate columns & fix names
+names(meta.ati.2021)[names(meta.ati.2021) == 'Unique_id.x'] <- 'Unique_id'
 meta.ati.2021 <- meta.ati.2021[,-7]
+
 
 #We can also combine with categorical site regimes on a one year basis
 #These were developed from 1) long-term Turbinaria data collected from the MCR LTER & ATI teams (called "classified_turbData.csv")
@@ -36,15 +34,18 @@ meta.ati.2021 <- meta.ati.2021[,-7]
 turb.regime <-  read.csv("../input/classified_turbData.csv")
 turb.regime$Year <- as.factor(turb.regime$Year)
 turb.regime.2021 <- subset(turb.regime, Year == "2021")
-nut.regime <- read.csv("../input/Regime_meta.csv")
+nut.regime <- read.csv("../input/Regime_meta.csv") #this is already only 2021
 
 
 meta.ati.2021.full <- merge(meta.ati.2021, turb.regime.2021, by = "Site", all = TRUE)
 meta.ati.2021.full <- merge(meta.ati.2021.full, nut.regime, by = "Site", all = TRUE)
 
 View(meta.ati.2021.full)
-names(meta.ati.2021.full)[names(meta.ati.2021.full) == 'Year.x'] <- 'Year'
-meta.ati.2021.full <- meta.ati.2021.full[,-45]
+
+meta.ati.2021.full.nar <- meta.ati.2021.full[!is.na(meta.ati.2021.full$Unique_id),]
+View(meta.ati.2021.full.nar)
+duplicated(meta.ati.2021.full.nar$sample.id) #there are some duplications, but uneven
+#need to fix manually & Change sample.id to sample-id for phyloseq
 
 #Write to CSV and txt
 write.csv(meta.ati.2021.full, "../output/metadata_ati_full_2021.csv")
