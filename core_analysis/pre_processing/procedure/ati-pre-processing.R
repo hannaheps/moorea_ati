@@ -14,15 +14,49 @@ library(decontam)
 #Make sure you set working directory into the "pre-processing/procedure folder
 setwd("~/Documents/OSUDocs/Projects/French_Polynesia/Around_the_island/moorea_ati/core_analysis/pre_processing/procedure/")
 
-#use qiime2R to upload data into a phyloseq object
-#metadata comes from the output of the combine_meta.R script where sequencing metadata is combined with the full ati dataset
+##Bring in the metadata - need to combine sequencing metadata with the full dataset for use downstream
+meta <- read.csv("../../../bioinformatics/input/metadata_microbe_ati_2021.csv")
+str(meta)
+#full dataset is from Nyssa Silbiger's github (this should bring in latest version)
+##FYI microbiome data have already been added to this dataframe from previous iteration
+ati <- read.csv("https://raw.githubusercontent.com/njsilbiger/ATI_NutrientRegimes/main/Data/AllNutrientData_clusters.csv")
 
+#subset ati to 2021
+ati.2021 <- subset(ati, as.factor(Year) == "2021")
+#merge (= left join) the ati with the metadata, specify all = TRUE to introduce NAs where there are no overlapping data
+meta.ati.2021 <- merge(meta, ati.2021, by = "Site", all = TRUE)
+#rename sample.id to sample_id
+names(meta.ati.2021)[names(meta.ati.2021) == 'sample.id'] <- 'sample-id'
+#Move sample-id to the first column
+meta.ati.2021 <- meta.ati.2021 %>%
+  relocate("sample-id")
+#The dataframe apparently needs to be in the same order as the sequencing data to merge with phyloseq
+#Re-order based on numerics first
+meta.ati.2021 <- arrange(meta.ati.2021, as.numeric(meta.ati.2021$"sample-id"))
+##Warns that NAs are introduced but it doesn't look like any actually were???
 
-#For final use the following code
-physeq <- qza_to_phyloseq("../../../bioinformatics/new_analysis/output/ati-2021-noeuk-table.qza", #feature table
-                          "../../../bioinformatics/new_analysis/output/tree-building/ati-2021-rooted-tree.qza", #tree
-                          "../../../bioinformatics/new_analysis/output/ati-2021-tax.qza", #taxonomy reference
-                          "../../../metadata/new_metadata/output/metadata_ati_full_2021.txt") #mapping file
+#Sadly, the negative controls are still out of order so we need to re-order manually:
+meta.ati.2021.ro<- rbind(meta.ati.2021[1:193,], meta.ati.2021[197:198,])
+meta.ati.2021.ro <- rbind(meta.ati.2021.ro, meta.ati.2021[194:196,])
+
+#This new df will create a "sample.id" column again, which can't be read
+names(meta.ati.2021.ro)[names(meta.ati.2021.ro) == 'sample.id'] <- 'sample-id'
+
+#Write to CSV and txt for use downstream
+write.csv(meta.ati.2021.ro, "../output/metadata_ati_full_2021.csv", row.names = FALSE)
+write.table(meta.ati.2021.ro, "../output/metadata_ati_full_2021.txt", row.names = FALSE, sep="\t")
+
+##NOTE: Apparently these txt files are not readable unless you open the file and then re-save it again. 
+### NO CLUE WHY ###
+#Once this is done we can now build the phyloseq object. I highly recommend saving this as an RDS file 
+#because who wants to go through this again...
+#crossing fingers that the metadata don't change again.....
+
+#Build a phyloseq object
+physeq <- qza_to_phyloseq("../../../bioinformatics/output/ati-2021-noeuk-table.qza", #feature table
+                          "../../../bioinformatics/output/tree-building/ati-2021-rooted-tree.qza", #tree
+                          "../../../bioinformatics/output/ati-2021-tax.qza", #taxonomy reference
+                          "../output/metadata_ati_full_2021.txt") #mapping file
 
 #Check the taxonomic classification is correct
 rank_names(physeq) #7 ranks
@@ -38,7 +72,7 @@ physeq <- subset_taxa(physeq, Kingdom != "d__Eukaryota")
 sample.data <- as(sample_data(physeq), "data.frame") #191 observations, 18 variables
 View(sample.data)
 
-##Decontamination
+###Decontamination###
 #Start by looking at the library size
 sample.data$LibrarySize <- sample_sums(physeq)
 sample.data <- sample.data[order(sample.data$LibrarySize),]
@@ -46,6 +80,7 @@ sample.data$Index <- seq(nrow(sample.data))
 #visualize library size
 ggplot(data = sample.data, aes(x=Index, y=LibrarySize, color = Sample_type)) +
   geom_point()
+ggsave("../output/library_size_withnegs.pdf", plot = last_plot())
 ##Library size of negative controls are way lower than samples (yay!)
 
 #Next check for contaminants using prevalence and threshold 0.5 (more conservative)

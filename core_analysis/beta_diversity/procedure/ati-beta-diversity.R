@@ -14,11 +14,12 @@ library(RColorBrewer)
 setwd("~/Documents/OSUDocs/Projects/French_Polynesia/Around_the_island/moorea_ati/core_analysis/beta_diversity/procedure/")
 
 #Read in the phyloseq object (output from pre-processing R script)
-physeq <- readRDS("../../pre_processing/output/ati-physeq.RDS")
+physeq <- readRDS("../../pre_processing/output/ati-2021-physeq-nonrare.RDS")
 data <- as(sample_data(physeq), "data.frame")
+data$sample.id <- rownames(data)
 
 #Using the rarefied data for alpha diversity
-physeq_rare <- readRDS("../../pre_processing/output/ati-physeq-11146.RDS") 
+physeq_rare <- readRDS("../../pre_processing/output/ati-2021-physeq-rare.RDS") 
 data.rare <- as(sample_data(physeq_rare), "data.frame")
 data.rare$sample.id <- rownames(data.rare)
 
@@ -31,12 +32,12 @@ physeq_r_ra <- transform_sample_counts(physeq_rare, function(x) x/ sum(x))
 data.r.ra <- as(sample_data(physeq_r_ra), "data.frame")
 
 
-#How about just look at the bar plots by sample, since there are only 89. 
+#How about just look at the bar plots by sample
 percent.trial <- physeq_rare %>% 
   tax_glom(taxrank = "Phylum", NArm=TRUE) %>% 
   transform_sample_counts(function(x) {x/sum(x)} ) 
 perc.melt <- psmelt(percent.trial)
-sum <- ddply(perc.melt, c("Phylum", "site.number"),summarise,
+sum <- ddply(perc.melt, c("Phylum", "Site"),summarise,
              N = length(Abundance), 
              mean = mean(Abundance),
              sd = sd(Abundance), 
@@ -48,9 +49,9 @@ sum.as.factor <- sum
 sum.as.factor$Phylum <- as.factor(sum.as.factor$Phylum)
 levels(sum.as.factor$Phylum)
 
-nb.cols <- 34
+nb.cols <- 67
 mycolors <- colorRampPalette(brewer.pal(11, "RdYlBu"))(nb.cols)
-ggplot(sum, aes(x = site.number, y = mean, fill = Phylum)) +
+ggplot(sum, aes(x = Site, y = mean, fill = Phylum)) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values=mycolors) +
   ylab("Relative Abundance") +
@@ -60,38 +61,43 @@ ggplot(sum, aes(x = site.number, y = mean, fill = Phylum)) +
 ggsave("../output/plots/phylum_barplot_by_sample.pdf", plot = last_plot())
 
 
+###
+
+
+
+
+
 ##What about by top 10 families? Probably more useful
 #Something wrong with this code below, need to sort it out
 physeq.rra.melt <- psmelt(physeq_r_ra)
 
-x = tapply(physeq.rra.melt$Abundance, physeq.rra.melt$Family, function(x) max(x))
-x = sort(x, TRUE) #sort phyla 
+x <-  tapply(physeq.rra.melt$Abundance, physeq.rra.melt$Family, function(x) max(x))
+x <-  sort(x, TRUE) #sort phyla 
 View(x) #add top 14 to code below to set NAs
 #Clade I and Clade II = SAR11
 physeq.rra.melt$Family <-  factor(as.character(physeq.rra.melt$Family, levels=names(x)))
 physeq.rra.melt$col_family <- physeq.rra.melt$Family
 View(physeq.rra.melt$col_family)
 #Set everything that is super low to NA so that we can call them "other"
-#sum.fam$col_family <- as.character(sum.fam$col_family)
-#sum.fam$col_family <- ifelse(is.na(sum.fam$col_family), 
-                            #'Unassigned', sum.fam$col_family)
+sum.fam$col_family <- as.character(sum.fam$col_family)
+sum.fam$col_family <- ifelse(is.na(sum.fam$col_family), 
+                            'Unassigned', sum.fam$col_family)
 physeq.rra.melt$col_family <- as.factor(physeq.rra.melt$col_family)
 
 physeq.rra.melt$col_family[sum.fam$col_family != "Cryomorphaceae" &
                     sum.fam$col_family != "Cyanobiaceae" & 
-                    sum.fam$col_family != "Arcobacteraceae" &
+                    sum.fam$col_family != "Alteromonadaceae" &
                     sum.fam$col_family != "Rhodobacteraceae" &
-                    sum.fam$col_family != "Clade II" &
-                    sum.fam$col_family != "Clade I" &
-                    sum.fam$col_family != "Flavobacteriaceae" &
-                    sum.fam$col_family != "Nitrincolaceae" &
-                    sum.fam$col_family != "NS9 marine group" &
-                    sum.fam$col_family != "Halieaceae" &
-                    sum.fam$col_family != "SAR116 clade" &
-                    sum.fam$col_family != "Halomonadaceae" &
                     sum.fam$col_family != "Moraxellaceae" &
-                    sum.fam$col_family != "Actinomarinaceae" &
-                    sum.fam$col_family != "AEGEAN-169 marine group"] <- NA
+                    sum.fam$col_family != "Nitrincolaceae" &
+                    sum.fam$col_family != "Arcobacteraceae" &
+                    sum.fam$col_family != "Halomonadaceae" &
+                    sum.fam$col_family != "NS9 marine group" &
+                    sum.fam$col_family != "Clade_I" &
+                    sum.fam$col_family != "Bacillaceae" &
+                    sum.fam$col_family != "Litoricolaceae" &
+                    sum.fam$col_family != "NS9_marine_group" &
+                    sum.fam$col_family != "Flavobacteraceae"] <- NA
 
 
 levels(physeq.rra.melt$col_family)
@@ -121,9 +127,6 @@ ggsave("../output/plots/family_barplot_by_sample.pdf", plot = last_plot())
 
 
 
-write.csv(x, "../output/genus_by_relabund.csv")
-
-
 physeq.rra.melt <- psmelt(physeq_r_ra)
 x = tapply(physeq.rra.melt$Abundance, physeq.rra.melt$Genus, function(x) max(x))
 x = sort(x, TRUE) #sort phyla 
@@ -141,7 +144,7 @@ ggplot(psychro.melt, aes(x = site.number, y = Abundance))+
   geom_bar(stat = "identity", fill = "turquoise") +
   xlab("\nSite Number") +
   ylab("Mean Relative Abundance\n") +
-  ggtitle("Psychrobacter: Mo'orea Around-the-island") +
+  ggtitle("Psychrobacter: Moorea Around-the-island") +
   theme_bw()
 
 #Export the data for Tom to plot around the island
