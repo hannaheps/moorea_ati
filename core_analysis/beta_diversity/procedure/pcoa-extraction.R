@@ -73,3 +73,68 @@ ggsave("../output/plots/bray_curtis_bygenus_pcoa.pdf", plot = last_plot())
 #This looks almost the same, but the axis 1 and 2 explain slightly more of the variance 
 
 
+
+##How about looking at dispersion
+##I think we want to look at bray curtis ~ nutrient regime (Turbinaria_groups_Wet)
+physeq.r.ra.trim <- subset_samples(physeq.r.ra, Turbinaria_groups != "NA")
+data.trim <- as(sample_data(physeq.r.ra.trim), "data.frame")
+bc <- phyloseq::distance(physeq.r.ra.trim, method = "bray")
+adonis2(bc ~ Turbinaria_groups, data = data.trim, method = "bray")
+#adonis2(formula = bc ~ Turbinaria_groups, data = data.trim, method = "bray")
+#Df SumOfSqs      R2      F Pr(>F)    
+#Turbinaria_groups   8   2.7228 0.10327 2.5336  0.001 ***
+#  Residual          176  23.6431 0.89673                  
+#Total             184  26.3659 1.00000  
+
+disp.bc <- betadisper(bc, data.trim$Turbinaria_groups, type = "centroid")
+pdf("../output/plots/dispersion_turbinaria_group_bray_curtis.pdf")
+boxplot(disp.bc, ylab = "Distance to Centroid", xlab = "Turbinaria Quantile Group")
+dev.off()
+
+TukeyHSD(disp.bc, which = "group", ordered = FALSE,
+         conf.level = 0.95)
+
+#How about Means separately?
+adonis2(bc ~ Turbinaria_quantile_meanName, data = data.trim, method = "bray")
+#Turbinaria_quantile_meanName   2   1.8272 0.0693 6.7758  0.001 ***
+#  Residual                     182  24.5388 0.9307                  
+#Total                        184  26.3659 1.0000      
+disp.bc <- betadisper(bc, data.trim$Turbinaria_quantile_meanName, type = "centroid")
+pdf("../output/plots/dispersion_turbinaria_mean_bray_curtis.pdf")
+boxplot(disp.bc, ylab = "Distance to Centroid", xlab = "Turbinaria Mean")
+dev.off()
+TukeyHSD(disp.bc, which = "group", ordered = FALSE,
+         conf.level = 0.95)
+#diff         lwr         upr     p adj
+#Low-High -0.10169543 -0.15319141 -0.05019945 0.0000176*
+#Med-High -0.01782980 -0.06932578  0.03366617 0.6922564
+#Med-Low   0.08386563  0.03195602  0.13577523 0.0005390*
+
+##How about variance separately?
+adonis2(bc ~ Turbinaria_quantile_variName, data = data.trim, method = "bray")
+#                              Df SumOfSqs     R2      F Pr(>F)  
+#Turbinaria_quantile_variName   2   0.4826 0.0183 1.6966  0.073 .
+#Residual                     182  25.8834 0.9817                
+#Total                        184  26.3659 1.0000                
+disp.bc <- betadisper(bc, data.trim$Turbinaria_quantile_variName, type = "centroid")
+pdf("../output/plots/dispersion_turbinaria_variance_bray_curtis.pdf")
+boxplot(disp.bc, ylab = "Distance to Centroid", xlab = "Turbinaria Variance")
+dev.off()
+
+
+##Can we visualise how these look in ordination space?
+turb.ord.plot <- plot_ordination(physeq.r.ra, bc.ord, type = "UniqueID", color = "Turbinaria_quantile_meanName", title = "Bray Curtis PCoA")
+turb.ord.plot + 
+  geom_point(size = 3) +
+  stat_ellipse(aes(colour = Turbinaria_groups), linetype = 2) +
+  theme_bw()
+
+
+
+#we can a distance based linear model to  look at continuous variables:
+##Examples -
+bc.full <- phyloseq::distance(physeq.r.ra, method = "bray")
+adonis2(bc.full ~ Nitrite_plus_Nitrate, data = data.r.ra, method = "bray")
+adonis2(bc.full ~ HIX, data = data.r.ra, method = "bray")
+
+

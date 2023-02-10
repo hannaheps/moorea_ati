@@ -432,27 +432,21 @@ library(viridisLite)
 #pca of fdom (normalize e.g., transform best or z score the fdom parameters before pca)
 
 
-
 # melted data frame
 # fdom indices are collapsed into two columns: index_name and index_value
 
-
-
-# filter NAs
-map_long_dat = l_dat[!is.na(map_long_dat$Latitude)]
-
 # make spacial points data frame
-map_sp = SpatialPointsDataFrame(data = map_long_dat,
-                                coords = list(map_long_dat$Latitude,
-                                              map_long_dat$Longitude))
+map_sp = SpatialPointsDataFrame(data = erich,
+                                coords = list(erich$Latitude,
+                                              erich$Longitude))
 
 
 # Check geographic range of sampling points
 limits = c(
-  min(map_long_dat$Longitude),
-  min(map_long_dat$Latitude), 
-  max(map_long_dat$Longitude),
-  max(map_long_dat$Latitude) 
+  min(erich$Longitude),
+  min(erich$Latitude), 
+  max(erich$Longitude),
+  max(erich$Latitude) 
 )
 
 # define a bounding box with a small cushion around the minimum and maximum
@@ -468,6 +462,7 @@ sa_map <- openmap(c(bbox$ymax, bbox$xmin),
                   c(bbox$ymin, bbox$xmax),
                   type = "stamen-terrain",
                   mergeTiles = TRUE)
+??openmap()
 
 sa_map2 <- openproj(sa_map)
 
@@ -495,5 +490,5 @@ mo_map = function(an_index, outlier_n){
   
   print(sa_map2_plt)
   
-  ggsave(filename = paste0("plots/exploration/ATI/map_",an_index,".png"), plot = sa_map2_plt))
+ggsave(filename = paste0("plots/exploration/ATI/map_",an_index,".png"), plot = sa_map2_plt))
 
