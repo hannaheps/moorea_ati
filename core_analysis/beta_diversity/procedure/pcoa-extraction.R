@@ -35,8 +35,11 @@ data.r.ra <- as(sample_data(physeq.r.ra), "data.frame")
 ##Run a bray curtis pcoa and plot
 bc.ord <- phyloseq::ordinate(physeq.r.ra, "PCoA", "bray")
 
+set2 <- brewer.pal(n = 5, name = "Set2")
+
 p.ord <- plot_ordination(physeq.r.ra, bc.ord, type = "Site", color = "Habitat", title = "Bray-Curtis PCoA")
 p.ord + geom_point(size = 4, aes(shape = Island_shore)) +
+  scale_color_manual(values=set2) +
   theme_bw()
 ggsave("../output/plots/bray_curtis_pcoa.pdf", plot = last_plot())
 
