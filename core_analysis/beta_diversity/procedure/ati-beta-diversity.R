@@ -49,7 +49,7 @@ sum.as.factor <- sum
 sum.as.factor$Phylum <- as.factor(sum.as.factor$Phylum)
 levels(sum.as.factor$Phylum)
 
-nb.cols <- 67
+nb.cols <- 66
 mycolors <- colorRampPalette(brewer.pal(11, "RdYlBu"))(nb.cols)
 ggplot(sum, aes(x = Site, y = mean, fill = Phylum)) +
   geom_bar(stat = "identity") +
@@ -59,11 +59,6 @@ ggplot(sum, aes(x = Site, y = mean, fill = Phylum)) +
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 
 ggsave("../output/plots/phylum_barplot_by_sample.pdf", plot = last_plot())
-
-
-###
-
-
 
 
 
@@ -78,26 +73,27 @@ View(x) #add top 14 to code below to set NAs
 physeq.rra.melt$Family <-  factor(as.character(physeq.rra.melt$Family, levels=names(x)))
 physeq.rra.melt$col_family <- physeq.rra.melt$Family
 View(physeq.rra.melt$col_family)
+sum.fam <- as.data.frame(physeq.rra.melt)
 #Set everything that is super low to NA so that we can call them "other"
 sum.fam$col_family <- as.character(sum.fam$col_family)
 sum.fam$col_family <- ifelse(is.na(sum.fam$col_family), 
-                            'Unassigned', sum.fam$col_family)
+                             'Unassigned', sum.fam$col_family)
 physeq.rra.melt$col_family <- as.factor(physeq.rra.melt$col_family)
 
 physeq.rra.melt$col_family[sum.fam$col_family != "Cryomorphaceae" &
-                    sum.fam$col_family != "Cyanobiaceae" & 
-                    sum.fam$col_family != "Alteromonadaceae" &
-                    sum.fam$col_family != "Rhodobacteraceae" &
-                    sum.fam$col_family != "Moraxellaceae" &
-                    sum.fam$col_family != "Nitrincolaceae" &
-                    sum.fam$col_family != "Arcobacteraceae" &
-                    sum.fam$col_family != "Halomonadaceae" &
-                    sum.fam$col_family != "NS9 marine group" &
-                    sum.fam$col_family != "Clade_I" &
-                    sum.fam$col_family != "Bacillaceae" &
-                    sum.fam$col_family != "Litoricolaceae" &
-                    sum.fam$col_family != "NS9_marine_group" &
-                    sum.fam$col_family != "Flavobacteraceae"] <- NA
+                             sum.fam$col_family != "Cyanobiaceae" & 
+                             sum.fam$col_family != "Alteromonadaceae" &
+                             sum.fam$col_family != "Rhodobacteraceae" &
+                             sum.fam$col_family != "Moraxellaceae" &
+                             sum.fam$col_family != "Nitrincolaceae" &
+                             sum.fam$col_family != "Arcobacteraceae" &
+                             sum.fam$col_family != "Halomonadaceae" &
+                             sum.fam$col_family != "NS9_marine_group" &
+                             sum.fam$col_family != "Flavobacteriaceae" &
+                             sum.fam$col_family != "Bacillaceae" &
+                             sum.fam$col_family != "Litoricolaceae" &
+                             sum.fam$col_family != "Clade_I" &
+                             sum.fam$col_family != "Clade_II"] <- NA
 
 
 levels(physeq.rra.melt$col_family)
@@ -106,16 +102,16 @@ physeq.rra.melt$col_family <- factor(physeq.rra.melt$col_family, levels = c(leve
 # convert NAs to other
 physeq.rra.melt$col_family [is.na(physeq.rra.melt$col_family)] = "Other"
 physeq.rra.melt$col_family <- factor(x = physeq.rra.melt$col_family, levels = c("Cryomorphaceae", "Cyanobiaceae", "Arcobacteraceae",
-                                                                                "Rhodobacteraceae", "Clade II", "Clade I",
-                                                              "Flavobacteriaceae", "Nitrincolaceae", "NS9 marine group",
-                                                              "Halieaceae", "SAR116 clade", "Halomonadaceae", "Moraxellaceae", 
-                                                              "Actinomarinaceae", "AEGEAN-169 marine group", "Other" ))
+                                                                                "Rhodobacteraceae", "Clade_II", "Clade_I",
+                                                                                "Flavobacteriaceae", "Nitrincolaceae", "NS9_marine_group",
+                                                                                "Halieaceae", "SAR116 clade", "Halomonadaceae", "Moraxellaceae", 
+                                                                                "Litoricolaceae", "Bacillaceae", "Other" ))
 #Make a colour scheme
 ale.colors <-  c( "#80B1D3","#FFFFB3","#ABA3E6","#FB8072","#8DD3C7", "#FDB462", "#B3DE69",
                   "#FCCDE5", "#BC80BD", "#FFED6F", "#219EBC","#E06F1F","#90BE6D", "#0A9396","#9B2226", "#A3A5A8" )
 
 #plot!
-ggplot(physeq.rra.melt, aes(x = site.number, y = Abundance, fill = col_family)) +
+ggplot(physeq.rra.melt, aes(x = Site, y = Abundance, fill = col_family)) +
   geom_bar(stat = "identity") +
   scale_fill_manual(values=ale.colors) +
   ylab("Relative Abundance") +
@@ -126,12 +122,50 @@ ggsave("../output/plots/family_barplot_by_sample.pdf", plot = last_plot())
 
 
 
+##Top most abundant genera
+physeq.rra.melt.comb <- physeq.rra.melt
+physeq.rra.melt.comb$Taxonomy <- as.factor(paste(physeq.rra.melt.comb$Family, physeq.rra.melt.comb$Genus, sep = "_")) 
 
-physeq.rra.melt <- psmelt(physeq_r_ra)
-x = tapply(physeq.rra.melt$Abundance, physeq.rra.melt$Genus, function(x) max(x))
-x = sort(x, TRUE) #sort phyla 
-View(x)
-write.csv(x, "../output/genus_by_relabund.csv")
+x = tapply(physeq.rra.melt.comb$Abundance, physeq.rra.melt.comb$Taxonomy, function(x) max(x))
+x = sort(x, TRUE) #sort by Family/Genus
+View(as.data.frame(x))
+View(as.data.frame(physeq.rra.melt.comb))
+
+#summarize and pull out abundances of all genera by site
+sum.gen.abund <- ddply(physeq.rra.melt.comb, c("Taxonomy", "Site"),summarise,
+                       N = sum(Abundance)
+)
+sum.gen.abund <- sum.gen.abund %>% spread(Taxonomy, N)
+print(colnames(sum.gen.abund))
+write.csv(sum.gen.abund, "../output/site_taxononmy_abund.csv", row.names = FALSE)
+
+##Can we subset this file to just the top abundant genera (greater than 5% of the community)
+sum.gen.abund.top <- subset(sum.gen.abund, select = c("Cryomorphaceae_uncultured", "Cyanobiaceae_Synechococcus_CC9902",
+                                                      "Alteromonadaceae_Alteromonas", "Rhodobacteraceae_HIMB11", "Cyanobiaceae_Prochlorococcus_MIT9313",
+                                                      "Moraxellaceae_Acinetobacter", "Nitrincolaceae_Marinobacterium", "Arcobacteraceae_uncultured",
+                                                      "Halomonadaceae_Halomonas", "NS9_marine_group_NS9_marine_group", "Flavobacteriaceae_NS5_marine_group",
+                                                      "Bacillaceae_Bacillus", "Clade_I_Clade_Ia", "Litoricolaceae_Litoricola", "Moraxellaceae_Psychrobacter",
+                                                      "Arcobacteraceae_NA", "Clade_II_Clade_II", "SAR86_clade_SAR86_clade", "Halieaceae_OM60(NOR5)_clade"))
+
+sum.gen.abund.top$Site <- rownames(sum.gen.abund.top)
+#Cool, let's add it to our erich dataset and make a heatmap
+
+erich <- read.csv("../../alpha_diversity/output/ati-2021-metadata-with-alphadiv.csv")
+
+erich.topabund <- merge(erich, sum.gen.abund.top, by = "Site")
+#Remove the duplicated column
+erich.topabund <- erich.topabund[, -2]
+#export the metadata
+
+write.csv(erich.topabund, "../output/metadata_plus_topabund_genera.csv", row.names = FALSE)
+
+
+
+##################
+
+#Below code is old, potentially deprecated.
+#If revived, will move above the hashes
+
 
 
 ##Can we pull out psychrobacter relative abundance and then map that? 
@@ -197,200 +231,3 @@ bray_curtis_percN_plot <- ggplot(data = bray_curtis_pcoa_df, aes(x=pcoa1, y=pcoa
 bray_curtis_percN_plot
 ggsave("../output/PCoA_percN.pdf", plot = last_plot())
 
-
-##JANUARY 2023
-##Running the PCoA
-##                    
-##First up is Bray Curtis
-bc <- phyloseq::distance(physeq_r_ra, method = "bray")
-bc.matrix <- as.matrix(bc)
-write.csv(bc.matrix, "../output/bray_curtis_distance_matrix.csv")
-#If we want to look at relationships
-#adonis(bc ~ Turb_Percent_N, data = percN.data, method = "bray")
-
-bray_curtis_pcoa <- ecodist::pco(bc)
-?ecodist::pco
-
-#vegan
-
-ord <- cmdscale(bc, k=2, eig = TRUE)
-print(ord)
-round(ord$eig*100/sum(ord$eig), 1)
-
-eig <- ord$eig 
-
-##isoMDS
-ord <- MASS::isoMDS(bc.matrix, y = cmdscale(bc.matrix, 2), k =2, maxit = 50, trace = TRUE, tol = 1e-3, p = 2)
-
-print(ord)
-
-library(ade4)
-ord.dudi <- dudi.pco(bc, scannf = FALSE, nf = 2, full = FALSE)
-summary(ord.dudi)
-scatter(ord.dudi)
-
-
-bray_curtis_pcoa_df <- data.frame(pcoa1 = ord$points[,1], 
-                                  pcoa2 = ord$points[,2])
-print(ord$eig)
-bray_curtis_pcoa_df <- cbind(bray_curtis_pcoa_df, data.r.ra)
-
-ggplot(data = bray_curtis_pcoa_df, aes(x=pcoa1, y=pcoa2)) +
-  geom_point() +
-  labs(x = "PCoA1",
-       y = "PCoA2", 
-       title = "Bray-Curtis PCoA") +
-  theme(title = element_text(size = 10))
-
-
-print(bray_curtis_pcoa)
-# All components could be found here: 
-# bray_curtis_pcoa$vectors
-# But we only need the first two to demonstrate what we can do:
-bray_curtis_pcoa_df <- data.frame(pcoa1 = bray_curtis_pcoa$vectors[,1], 
-                                  pcoa2 = bray_curtis_pcoa$vectors[,2])
-
-
-bray_curtis_plot <- ggplot(data = bray_curtis_pcoa_df, aes(x=pcoa1, y=pcoa2)) +
-  geom_point() +
-  labs(x = "PCoA1",
-       y = "PCoA2", 
-       title = "Bray-Curtis PCoA") +
-  theme(title = element_text(size = 10)) # makes titles smaller
-
-
-ggsave("../output/plots/PCoA_bray.pdf", plot = last_plot())
-
-
-##Can we split by reef location
-bray_curtis_pcoa_data_df <- cbind(bray_curtis_pcoa_df,
-                            data.r.ra)
-
-write.csv(bray_curtis_pcoa_data_df, "../output/bray_curtis_PCoA_Axes_data.csv")
-# Creates a plot
-bray_curtis_N_plot <- ggplot(data = bray_curtis_pcoa_data_df, aes(x=pcoa1, y=pcoa2, color = turb_C_to_N_ratio)) + 
-  geom_point(size = 3) +
-  labs(x = "PC1",
-       y = "PC2",
-       title = "PCoA of Microbial Communities vs  C:N") +
-  theme_bw()
-
-install.packages("plotly")
-library(plotly)
-plot_ly(x=pcoa1, y=pcoa2, z=pcoa3, type="scatter3d", mode="markers", data = bray_curtis_pcoa_df)
-
-bray_curtis_percN_plot
-ggsave("../output/PCoA_percN.pdf", plot = last_plot())
-
-
-###Weighted UniFrac
-
-wuf <- phyloseq::distance(physeq_rare, method = "wunifrac")
-#If we want to look at relationships
-#adonis(bc ~ Turb_Percent_N, data = percN.data, method = "bray")
-
-wunifrac_pcoa <- ecodist::pco(wuf)
-print(wunifrac_pcoa)
-# All components could be found here: 
-# bray_curtis_pcoa$vectors
-# But we only need the first two to demonstrate what we can do:
-wunifrac_pcoa_df <- data.frame(pcoa1 = wunifrac_pcoa$vectors[,1], 
-                               pcoa2 = wunifrac_pcoa$vectors[,2])
-
-
-wunifrac_plot <- ggplot(data = wunifrac_pcoa_df, aes(x=pcoa1, y=pcoa2)) +
-  geom_point() +
-  labs(x = "PCo1",
-       y = "PCo2", 
-       title = "Weighted UniFrac PCoA") +
-  theme(title = element_text(size = 10)) # makes titles smaller
-
-
-ggsave("../output/plots/PCoA_WeightedUniFrac.pdf", plot = last_plot())
-
-
-wunifrac_pcoa_data_df <- cbind(wunifrac_pcoa_df,
-                                  data.rare)
-
-# Creates a plot
-wunifrac_N_plot <- ggplot(data = wunifrac_pcoa_data_df, aes(x=pcoa1, y=pcoa2, color = turb_C_to_N_ratio)) + 
-  geom_point(size = 3) +
-  labs(x = "PCo1",
-       y = "PCo2",
-       title = "W UniFrac PCoA of Microbial Communities vs  C:N") +
-  theme_bw()
-
-bray_curtis_percN_plot
-ggsave("../output/plots/wunifrac_PCoA_percN.pdf", plot = last_plot())
-
-
-##How about nmds
-ord.bc <- ordinate(physeq.r.coral, "NMDS", "bray", trymax = 500) #Run 20 stress 0.07221613
-stressplot(ord.bc)
-scores.bc <- as.data.frame(scores(ord))
-scores.bc <- cbind(scores.bc, data.rare)
-
-
-plot.br <- ggplot(scores, aes(x = NMDS1, y = NMDS2)) + 
-  geom_point(aes(colour = motu, shape = island.side), size = 4) +
-  #geom_text(label = scores.outrm$sample.name) +
-  stat_ellipse(aes(x = NMDS1, y = NMDS2, colour = motu), linetype = 2) +
-  theme_bw()
-
-plot.br+ facet_grid(cols = vars(motu))
-
-
-
-
-
-
-
-
-
-
-
-
-#distance-based linear model (distlm) when it's with continuous
-bc <- phyloseq::distance(physeq_rare, method = "bray")
-View(data.rare)
-adonis(bc ~ Water_Phosphate, data = data.rare, method = "bray")
-#Df SumsOfSqs MeanSqs F.Model      R2 Pr(>F)
-#Water_Phosphate  1    0.2442 0.24417  1.4123 0.01597  0.164
-#Residuals       87   15.0414 0.17289         0.98403       
-#Total           88   15.2855                 1.00000         
-
-
-##distlm for fishy things
-fish <- read.csv("../../parrotfish_microbes/input/fish_summaries.csv")
-fish$Site_number <- fish$Site
-data.full <- left_join(data.rare, fish, by = "Site_number")
-sample_data(physeq_rare)$Herbivore_total <- data.full$Herbivore_total
-sample_data(physeq_rare)$Corallivore_total <- data.full$Corallivore_total
-#Remove samples that don't have any fishy data
-physeq.fish <- subset_samples(physeq_rare, Herbivore_total !=  "NA")
-fish.data <- as(sample_data(physeq.fish), "data.frame")
-
-#Let's do the adonis
-bc.fish <- phyloseq::distance(physeq.fish, method = "bray")
-adonis(bc.herb ~ Herbivore_total, data = fish.data, method = "bray")
-#Df SumsOfSqs MeanSqs F.Model      R2 Pr(>F)  
-#Herbivore_total  1    0.2621 0.26210  1.6706 0.04819  0.096 .
-#Residuals       33    5.1774 0.15689         0.95181         
-#Total           34    5.4395                 1.00000  
-
-adonis(bc.fish ~ Corallivore_total, data = fish.data, method = "bray")
-#Df SumsOfSqs MeanSqs F.Model      R2 Pr(>F)
-#Corallivore_total  1    0.1716 0.17155  1.0747 0.03154   0.35
-#Residuals         33    5.2680 0.15963         0.96846       
-#Total             34    5.4395                 1.00000   
-
-##Can we extract PCoA vector 1 & 2 to plot around the island to help Nyssa's group?
-bc <- phyloseq::distance(physeq_rare, method = "bray")
-bray_curtis_pcoa <- ecodist::pco(bc)
-# bray_curtis_pcoa$vectors
-bray_curtis_pcoa_df <- data.frame(pcoa1 = bray_curtis_pcoa$vectors[,1], 
-                                  pcoa2 = bray_curtis_pcoa$vectors[,2])
-bray_curtis_pcoa_df <- cbind(bray_curtis_pcoa_df,
-                             Site_number = data.rare$Site_number)
-
-write.csv(bray_curtis_pcoa_df, "../output/pcoa_vectors.csv")
