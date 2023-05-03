@@ -65,6 +65,7 @@ tax_table(physeq) #37542 taxa
 #Remove unassigned reads (unassigned at the kingdom level) & for good measure the euks
 physeq <- subset_taxa(physeq,  Kingdom != "Unassigned")
 physeq <- subset_taxa(physeq, Kingdom != "d__Eukaryota")
+physeq <- subset_taxa(physeq, Order != "Chloroplast")
 
 ##All Family == Mitochondria are Rickettsiales, so no need to do extra Mitochondrial removals
 
@@ -89,6 +90,18 @@ contamdf.prev <- isContaminant(physeq, method = "prevalence", neg = "is.neg", th
 table(contamdf.prev$contaminant)
 #Only 10 potential contaminants!
 
+##Which contams? by taxonomic name
+contamdf.prev.contamsonly <- contamdf.prev %>% filter(contaminant == TRUE)
+
+bad.taxa <- rownames(contamdf.prev.contamsonly)
+
+all.taxa <- taxa_names(physeq)
+contaminant.taxa <- all.taxa[(all.taxa %in% bad.taxa)]
+physeq.contams.only <- prune_taxa(contaminant.taxa, physeq)
+physeq.contams.only.df <- as.data.frame(tax_table(physeq.contams.only))
+print(physeq.contams.only.df)
+View(physeq.contams.only.df)
+
 #Remove contaminants :) 
 physeq.noncont <- prune_taxa(!contamdf.prev$contaminant, physeq)
 
@@ -99,22 +112,20 @@ physeq.noncont <- subset_samples(physeq.noncont, is.neg != "TRUE")
 physeq.final <- prune_taxa(taxa_sums(physeq.noncont) > 1, physeq.noncont)
 
 #Check final numbers
-tax_table(physeq.final) #37454 taxa
+tax_table(physeq.final) #32117 taxa
 sample_data(physeq.final) #195 samples total, 50 variables
-
-
-#Count Sequences
-sum(sample_sums(physeq.final)) #6,715,723
-#check sample sums per sample, sorted in ascending order
-sort(sample_sums(physeq.final)) #lowest is sample 75 with 10,534, highest is 65,409
+print(microbiome::summarize_phyloseq(physeq.final)) 
+#Total reads = 6420857
+#Avg reads/sample = 32927.4
+#Min No. of reads = 10500
 
 ##Make two finalized phyloseq objects, one non-rarefied and one rarefied
 #physeq.final is non rarefied
 saveRDS(physeq.final, file = "../output/ati-2021-physeq-nonrare.RDS", compress = TRUE)
 
 #Make a rarefied phyloseq object for alpha diversity analyses
-physeq_rare <- rarefy_even_depth(physeq.final, sample.size = 10534, rngseed = 711) #Set seed to be reproducible
-#Note: 8472 ASVs were removed due to subsampling as they were no longer present
+physeq_rare <- rarefy_even_depth(physeq.final, sample.size = 10500, rngseed = 711) #Set seed to be reproducible
+#Note: 6844 ASVs were removed due to subsampling as they were no longer present
 sample_sums(physeq_rare) #Double check that the sub-sampling worked, this should report 10534 for each sample
 saveRDS(physeq_rare, file = "../output/ati-2021-physeq-rare.RDS", compress = TRUE)
 
