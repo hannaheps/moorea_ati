@@ -184,4 +184,3 @@ axis.title.y=element_blank()) +
 
 ggsave("../output/plots/richness_moorea0323.viridis.svg", bg = "transparent", limitsize = FALSE, width = 10, height = 10, dpi = 220)
 ggsave("../output/plots/richness_moorea0323.viridis.png", bg = "transparent", limitsize = FALSE, width = 10, height = 10, dpi = 220)
-
